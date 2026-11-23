@@ -106,7 +106,7 @@
 
   function desenharQuadros() {
     const cats = estado.categorias.filter((c) => temasDaCat(c.id).length);
-    const todos = { id: "todos", nome: "Todos os temas", emoji: "✨" };
+    const todos = { id: "todos", nome: "Todos", emoji: "✨" };
     $("quadros").innerHTML = cats.concat(todos).map((c, i) => {
       const [c1, c2] = c.cor ? [c.cor, c.cor] : CORES_QUADRO[i % CORES_QUADRO.length];
       const fotos = fotosDaCategoria(c);
