@@ -419,7 +419,7 @@
     preencherConfig();
     toast("Configurações salvas!");
   });
-  const CAMPOS_DOCS = ["documento", "chavePix", "enderecoEmpresa", "prazoSaldo", "clausulasContrato"];
+  const CAMPOS_DOCS = ["documento", "chavePix", "enderecoEmpresa", "prazoSaldo", "clausulasContrato", "clausulaDados"];
   function preencherDocs() { const f = $("formDocs"); CAMPOS_DOCS.forEach((k) => { f[k].value = d.config[k] ?? ""; }); }
   (window.PainelExtras = window.PainelExtras || []).push(preencherDocs);
   $("formDocs").addEventListener("submit", async (e) => {

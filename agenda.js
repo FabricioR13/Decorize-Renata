@@ -222,6 +222,8 @@
           <button class="btn btn-claro" data-doc="recibo" data-ev="${escaparHtml(e.id)}">🧾 Recibo</button>
           <button class="btn btn-claro" data-doc="contrato" data-ev="${escaparHtml(e.id)}">📄 Contrato</button>
           ${fim(e) <= hoje() && e.status !== "cancelado" ? `<button class="btn btn-claro" data-dano="${escaparHtml(e.id)}">🧰 Registrar dano</button>` : ""}
+          ${fim(e) < hoje() && (e.cpf || e.telefone || e.endereco) ? `<button class="btn btn-claro" data-apagar-dados="${escaparHtml(e.id)}">🧹 Apagar dados da cliente</button>` : ""}
+          ${e.dadosApagadosEm ? `<small class="ev-dados-apagados">Dados da cliente apagados em ${dataCurta(e.dadosApagadosEm.slice(0, 10))}</small>` : ""}
         </div>
       </div>
     </article>`;
@@ -276,8 +278,10 @@
       const id = a.id || a.docId;
       return `<label><input type="checkbox" value="${escaparHtml(id)}" ${(v.adicionais || []).includes(id) ? "checked" : ""}> ${escaparHtml(a.nome)} <small>${formatarMoeda(a.preco)}</small></label>`;
     }).join("");
-    ["temaId", "kitId", "data", "horaFesta", "horaMontagem", "devolucao", "horaDevolucao", "cliente", "telefone", "local", "endereco", "status", "obs"]
+    ["temaId", "kitId", "data", "horaFesta", "horaMontagem", "devolucao", "horaDevolucao", "cliente", "telefone", "cpf", "local", "endereco", "status", "obs"]
       .forEach((k) => { if (f[k]) f[k].value = v[k] ?? ""; });
+    f.telefone.value = mascaraTelefone(f.telefone.value);
+    f.cpf.value = mascaraCpf(f.cpf.value);
     if (!v.kitId) f.kitId.value = (P().d.combos[0] || {}).id || "";
     f.modalidade.value = v.modalidade;
     f.valor.value = P().valorCampo(v.valor);
@@ -300,7 +304,7 @@
       kitId: f.kitId.value, modalidade: f.modalidade.value,
       data: f.data.value, horaFesta: f.horaFesta.value, horaMontagem: f.horaMontagem.value,
       devolucao: f.devolucao.value || f.data.value, horaDevolucao: f.horaDevolucao.value,
-      cliente: f.cliente.value.trim(), telefone: f.telefone.value.trim(),
+      cliente: f.cliente.value.trim(), telefone: f.telefone.value.trim(), cpf: f.cpf.value.trim(),
       local: f.local.value.trim(), endereco: f.endereco.value.trim(),
       adicionais: [...$("agAdicionais").querySelectorAll("input:checked")].map((i) => i.value),
       valor: P().numero(f.valor.value), sinal: P().numero(f.sinal.value),
@@ -337,11 +341,38 @@
       : "";
   }
 
+  /* ---------- WhatsApp e CPF da cliente ---------- */
+  /** (51) 99999-9999 — no máximo DDD + 9 dígitos (o 55 do Brasil é tirado). */
+  function mascaraTelefone(v) {
+    let d = String(v || "").replace(/\D/g, "");
+    if (d.length > 11 && d.startsWith("55")) d = d.slice(2); // tirou o +55 do Brasil
+    d = d.slice(0, 11);
+    if (d.length <= 2) return d ? `(${d}` : "";
+    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  }
+  /** 000.000.000-00 — no máximo 11 dígitos. */
+  function mascaraCpf(v) {
+    const d = String(v || "").replace(/\D/g, "").slice(0, 11);
+    return d.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3").replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{1,2})$/, "$1.$2.$3-$4");
+  }
+  /** Confere os dígitos verificadores do CPF. */
+  function cpfValido(v) {
+    const d = String(v || "").replace(/\D/g, "");
+    if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+    const dv = (n) => { let s = 0; for (let i = 0; i < n; i++) s += Number(d[i]) * (n + 1 - i); const r = (s * 10) % 11; return r === 10 ? 0 : r; };
+    return dv(9) === Number(d[9]) && dv(10) === Number(d[10]);
+  }
+
   async function salvar(ev) {
     ev.preventDefault();
     const dados = lerForm();
     if (!dados.data) { P().toast("Escolha a data do evento."); return; }
     if (!dados.temaId && !dados.cliente) { P().toast("Escolha o tema ou informe a cliente."); return; }
+    const digitosTel = dados.telefone.replace(/\D/g, "");
+    if (digitosTel && digitosTel.length !== 10 && digitosTel.length !== 11) { P().toast("Confira o WhatsApp: DDD + número (10 ou 11 dígitos)."); $("agForm").telefone.focus(); return; }
+    if (dados.cpf && !cpfValido(dados.cpf)) { P().toast("CPF inválido. Confira os números."); $("agForm").cpf.focus(); return; }
     if (dados.devolucao < dados.data) dados.devolucao = dados.data;
     dados.criadoEm = ag.editando ? ag.editando.criadoEm || new Date().toISOString() : new Date().toISOString();
     if (ag.editando && ag.editando.lembretesFeitos) dados.lembretesFeitos = ag.editando.lembretesFeitos;
@@ -457,6 +488,8 @@
     $("agFechar").addEventListener("click", fecharEditor);
     $("agForm").addEventListener("submit", salvar);
     $("agForm").addEventListener("input", (e) => {
+      if (e.target.name === "telefone") e.target.value = mascaraTelefone(e.target.value);
+      if (e.target.name === "cpf") e.target.value = mascaraCpf(e.target.value);
       if (e.target.name === "valor") ag.valorManual = true;
       if (e.target.name === "data") {
         const f = $("agForm");
@@ -519,6 +552,14 @@
       if (ok) {
         const ev = P().d.eventos.find((x) => x.id === ok);
         Dados.salvar("eventos", ev.docId || ev.id, { status: "realizado" }).then(() => P().recarregar()).then(() => P().toast("Evento marcado como realizado. ✅"));
+        return;
+      }
+      const apagar = e.target.dataset.apagarDados;
+      if (apagar) {
+        const ev = P().d.eventos.find((x) => x.id === apagar);
+        if (!ev || !confirm(`Apagar o CPF, o WhatsApp e o endereço de ${ev.cliente || "esta cliente"}?\n\nO tema, a data e os valores continuam na agenda e nos relatórios. Não dá para desfazer.`)) return;
+        Dados.salvar("eventos", ev.docId || ev.id, { cpf: "", telefone: "", endereco: "", dadosApagadosEm: new Date().toISOString() })
+          .then(() => P().recarregar()).then(() => P().toast("Dados da cliente apagados."));
         return;
       }
       const dano = e.target.dataset.dano;

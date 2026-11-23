@@ -135,6 +135,8 @@ const SEED_CONFIG = {
     ].join("\n"),
     // Colunas da planilha (em branco = todas, na ordem padrão)
     colunasPlanilha: null,
+    // Aparece no contrato, depois das condições (vazio = não aparece)
+    clausulaDados: "Os dados da LOCATÁRIA (nome, CPF, WhatsApp e endereço) são usados somente para esta locação e para eventual cobrança de danos ou atrasos, e não são compartilhados com terceiros. Encerrada a locação, a LOCATÁRIA pode pedir que sejam apagados.",
     cabecalhoPlanilha: true,
     heroTitulo: "Escolha o tema da sua festa",
     heroSubtitulo: "Mais de 50 temas, cada um em 4 montagens. Escolha o tema, o kit e fale direto com a Renata pelo WhatsApp.",
@@ -364,7 +366,7 @@ const Dados = MODO_DEMO ? DadosDemo : DadosFirebase;
 
 // Dados do contrato (CPF/CNPJ, Pix, endereço, cláusulas): ficam em configuracoes/privado,
 // que só o login da administradora lê. O resto das configurações é público (o catálogo precisa).
-const CAMPOS_PRIVADOS = ["documento", "chavePix", "enderecoEmpresa", "prazoSaldo", "clausulasContrato"];
+const CAMPOS_PRIVADOS = ["documento", "chavePix", "enderecoEmpresa", "prazoSaldo", "clausulasContrato", "clausulaDados"];
 
 // Valores padrão (usados quando a configuração salva não tem algum campo)
 const CONFIG_PADRAO = SEED_CONFIG;

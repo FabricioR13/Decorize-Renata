@@ -150,7 +150,7 @@
       <h2>Contrato de locação de decoração</h2>
       <h3>As partes</h3>
       <p><b>LOCADORA:</b> ${esc(c.nomeLoja)}, representada por ${esc(c.nomeDona)}${c.documento ? `, ${esc(c.documento)}` : ""}${c.enderecoEmpresa ? `, ${esc(c.enderecoEmpresa)}` : ""}, WhatsApp ${esc(telefoneFormatado(c.whatsapp))}.</p>
-      <p><b>LOCATÁRIA:</b> ${esc(e.cliente || "________________________________")}, WhatsApp ${esc(telefoneFormatado(e.telefone) || "________________")}, CPF ______________________.</p>
+      <p><b>LOCATÁRIA:</b> ${esc(e.cliente || "________________________________")}, WhatsApp ${esc(telefoneFormatado(e.telefone) || "________________")}, CPF ${esc(e.cpf || "______________________")}.</p>
       <h3>O que está sendo alugado</h3>
       <div class="caixa">
         <p><b>Tema:</b> ${esc(e.temaNome)}<br><b>${esc(kit.nome)}:</b> ${esc(kit.itens || "")}${ads.length ? `<br><b>Adicionais:</b> ${esc(ads.join(", "))}` : ""}<br>
@@ -172,6 +172,7 @@
       ${c.chavePix ? `<p>Pagamentos por Pix: <b>${esc(c.chavePix)}</b></p>` : ""}
       <h3>Condições</h3>
       <ol>${clausulas.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
+      ${c.clausulaDados ? `<h3>Dados da locatária</h3><p>${esc(c.clausulaDados)}</p>` : ""}
       ${e.obs ? `<p><b>Observações:</b> ${esc(e.obs)}</p>` : ""}
       <p>${esc(cidade())}, ${dataExtensa()}.</p>
       <div class="ass">
@@ -187,6 +188,7 @@
       "",
       "Condições:",
       ...clausulas.map((x, i) => `${i + 1}. ${x}`),
+      ...(c.clausulaDados ? ["", `Seus dados: ${c.clausulaDados}`] : []),
       "",
       "Se estiver tudo certo, responda *De acordo* 🧡",
     ].join("\n");

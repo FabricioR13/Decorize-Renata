@@ -377,3 +377,5 @@
 .credito-tf { justify-self: center; }
 .login-caixa .credito-tf img { margin: 0; border-radius: 6px; object-fit: cover; }
 .credito-tf:hover { opacity: 1; text-decoration: underline; }
+
+.ev-dados-apagados { align-self: center; color: var(--suave, #86695a); font-size: 12px; font-weight: 700; }

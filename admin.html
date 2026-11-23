@@ -262,6 +262,8 @@
           <label class="campo largo"><span>Prazo do saldo</span><input name="prazoSaldo" placeholder="no dia da retirada ou da montagem"></label>
           <label class="campo largo"><span>Condições do contrato (uma por linha)</span><textarea name="clausulasContrato" rows="8"></textarea>
             <small>É um modelo. Vale revisar com quem cuida da parte jurídica antes de usar.</small></label>
+          <label class="campo largo"><span>Uso dos dados da cliente (aparece no contrato)</span><textarea name="clausulaDados" rows="3"></textarea>
+            <small>Informa a cliente como o CPF, o WhatsApp e o endereço dela são usados (LGPD). Deixe vazio para não aparecer.</small></label>
           <div class="largo"><button class="btn btn-laranja" type="submit">Salvar</button></div>
         </form>
       </div>
@@ -340,7 +342,8 @@
         <label class="campo"><span id="agRotDevolucao">Devolução em</span><input type="date" name="devolucao"></label>
         <label class="campo"><span id="agRotHoraDev">Devolução às</span><input type="time" name="horaDevolucao"></label>
         <label class="campo"><span>Cliente</span><input name="cliente" placeholder="Nome de quem contratou"></label>
-        <label class="campo"><span>WhatsApp da cliente</span><input name="telefone" inputmode="tel" placeholder="(51) 99999-9999"></label>
+        <label class="campo"><span>WhatsApp da cliente</span><input name="telefone" inputmode="tel" autocomplete="off" placeholder="(51) 99999-9999"></label>
+        <label class="campo"><span>CPF da cliente (vai no contrato)</span><input name="cpf" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="000.000.000-00"></label>
         <label class="campo"><span>Local</span><input name="local" placeholder="Salão, casa da cliente…"></label>
         <label class="campo"><span>Endereço</span><input name="endereco" placeholder="Rua, número — cidade"></label>
       </div>
