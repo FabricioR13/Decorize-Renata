@@ -9,7 +9,14 @@
 //     (Firestore + login por e-mail/senha). Regras em regras.md.
 // ═════════════════════════════════════════════════════════════════════════════
 
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyB4o_V40PZ3zRvk7WNozFacp_0XClbyz_E",
+    authDomain: "decorize-renata.firebaseapp.com",
+    projectId: "decorize-renata",
+    storageBucket: "decorize-renata.firebasestorage.app",
+    messagingSenderId: "375745642967",
+    appId: "1:375745642967:web:0d06bdcbc4eb641f9d4b92",
+};
 // Exemplo:
 // const FIREBASE_CONFIG = {
 //   apiKey: "...", authDomain: "decorize-xxxx.firebaseapp.com", projectId: "decorize-xxxx",
