@@ -40,7 +40,23 @@
       await Dados.entrar($("loginEmail").value, $("loginSenha").value);
       await abrirPainel();
     } catch (err) {
-      $("erroLogin").textContent = "E-mail ou senha incorretos.";
+      $("erroLogin").textContent = err && err.message === "sem-acesso"
+        ? "Este e-mail não tem acesso ao painel. Fale com a TF Solutions."
+        : "E-mail ou senha incorretos.";
+      $("erroLogin").hidden = false;
+    }
+  });
+
+  // Esqueci minha senha (só com Firebase): manda o e-mail para criar uma senha nova
+  $("esqueciSenha").hidden = MODO_DEMO;
+  $("esqueciSenha").addEventListener("click", async () => {
+    const email = $("loginEmail").value.trim();
+    if (!email) { $("erroLogin").textContent = "Digite o seu e-mail primeiro."; $("erroLogin").hidden = false; return; }
+    try {
+      await Dados.redefinirSenha(email);
+      toast("Enviamos um e-mail para você criar uma senha nova.");
+    } catch (e) {
+      $("erroLogin").textContent = "Não consegui enviar. Confira o e-mail digitado.";
       $("erroLogin").hidden = false;
     }
   });
@@ -55,14 +71,15 @@
   }
 
   async function recarregar() {
-    const [cfg, temas, cats, combos, adicionais, contatos, eventos, pecas] = await Promise.all([
+    const [cfg, privado, temas, cats, combos, adicionais, contatos, eventos, pecas] = await Promise.all([
       Dados.obter("configuracoes", "geral"),
+      Dados.obter("configuracoes", "privado"),
       Dados.listar("temas"), Dados.listar("categorias"), Dados.listar("combos"),
       Dados.listar("adicionais"), Dados.listar("contatos"), Dados.listar("eventos"), Dados.listar("pecas"),
     ]);
     d.eventos = eventos;
     d.pecas = pecas;
-    d.config = { ...CONFIG_PADRAO, ...(cfg || {}) };
+    d.config = { ...CONFIG_PADRAO, ...(cfg || {}), ...(privado || {}) };
     d.temas = temas.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
     d.categorias = (cats.length ? cats : SEED_CATEGORIAS).sort(ordenarPor("ordem"));
     d.combos = (combos.length ? combos : SEED_COMBOS).sort(ordenarPor("ordem"));
@@ -409,7 +426,7 @@
     e.preventDefault();
     const novo = {};
     CAMPOS_DOCS.forEach((k) => { novo[k] = e.target[k].value.trim(); });
-    await Dados.salvar("configuracoes", "geral", novo);
+    await Dados.salvar("configuracoes", "privado", novo); // não fica público
     Object.assign(d.config, novo);
     toast("Dados dos documentos salvos!");
   });

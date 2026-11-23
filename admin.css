@@ -371,3 +371,9 @@
   .cat-acoes { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
   .video-linha { grid-template-columns: 1fr; }
 }
+
+/* crédito discreto da TF no login */
+.credito-tf { display: inline-flex; align-items: center; gap: 7px; margin-top: 18px; font-size: 12px; font-weight: 700; color: var(--suave, #86695a); text-decoration: none; opacity: 0.8; }
+.credito-tf { justify-self: center; }
+.login-caixa .credito-tf img { margin: 0; border-radius: 6px; object-fit: cover; }
+.credito-tf:hover { opacity: 1; text-decoration: underline; }

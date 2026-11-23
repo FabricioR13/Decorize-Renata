@@ -323,18 +323,41 @@ const DadosFirebase = {
         this._init();
         await this._db.collection(col).doc(String(id)).delete();
     },
+    /** Só entra quem está na lista "admins" do Firestore (um documento por e-mail, em minúsculas). */
+    async _ehAdmin(usuario) {
+        const email = String((usuario && usuario.email) || "").toLowerCase();
+        if (!email) return false;
+        try { return (await this._db.collection("admins").doc(email).get()).exists; } catch (e) { return false; }
+    },
     async entrar(email, senha) {
         this._init();
-        await firebase.auth().signInWithEmailAndPassword(email, senha);
+        const cred = await firebase.auth().signInWithEmailAndPassword(email, senha);
+        if (!(await this._ehAdmin(cred.user))) {
+            await firebase.auth().signOut();
+            throw new Error("sem-acesso");
+        }
         return true;
     },
     async sair() { this._init(); await firebase.auth().signOut(); },
-    estaLogado(cb) { this._init(); firebase.auth().onAuthStateChanged((u) => cb(!!u)); },
+    estaLogado(cb) {
+        this._init();
+        firebase.auth().onAuthStateChanged(async (u) => {
+            if (!u) { cb(false); return; }
+            if (await this._ehAdmin(u)) { cb(true); return; }
+            await firebase.auth().signOut();
+            cb(false);
+        });
+    },
+    async redefinirSenha(email) { this._init(); await firebase.auth().sendPasswordResetEmail(email); },
     resetar() {},
 };
 
 const MODO_DEMO = !FIREBASE_CONFIG;
 const Dados = MODO_DEMO ? DadosDemo : DadosFirebase;
+
+// Dados do contrato (CPF/CNPJ, Pix, endereço, cláusulas): ficam em configuracoes/privado,
+// que só o login da administradora lê. O resto das configurações é público (o catálogo precisa).
+const CAMPOS_PRIVADOS = ["documento", "chavePix", "enderecoEmpresa", "prazoSaldo", "clausulasContrato"];
 
 // Valores padrão (usados quando a configuração salva não tem algum campo)
 const CONFIG_PADRAO = SEED_CONFIG;

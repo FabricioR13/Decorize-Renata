@@ -7,6 +7,10 @@
 <meta name="robots" content="noindex">
 <title>Painel | Decorize</title>
 <link rel="icon" href="assets/icone.png">
+<link rel="manifest" href="painel.webmanifest">
+<link rel="apple-touch-icon" href="assets/painel-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Decorize Painel">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap">
@@ -19,13 +23,17 @@
 <section class="login" id="telaLogin" hidden>
   <form class="login-caixa" id="formLogin">
     <img src="assets/logo.png" alt="Decorize" width="84" height="84">
-    <h1>Painel da Decorize</h1>
+    <h1>Painel da loja</h1>
     <p id="dicaLogin">Entre para cuidar dos temas e dos valores.</p>
     <label class="campo" id="campoEmail" hidden><span>E-mail</span><input type="email" id="loginEmail" autocomplete="username"></label>
     <label class="campo"><span>Senha</span><input type="password" id="loginSenha" autocomplete="current-password" required></label>
     <p class="erro" id="erroLogin" hidden></p>
     <button class="btn btn-laranja btn-bloco" type="submit">Entrar</button>
+    <button class="link" type="button" id="esqueciSenha" hidden>Esqueci minha senha</button>
     <a class="link" href="index.html">Voltar ao catálogo</a>
+    <a class="credito-tf" href="https://www.tfsolutions.com.br" target="_blank" rel="noopener">
+      <img src="assets/tf-solutions-logo.jpg" alt="" width="22" height="22">Sistema desenvolvido por TF Solutions
+    </a>
   </form>
 </section>
 
