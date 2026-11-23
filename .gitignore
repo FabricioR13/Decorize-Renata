@@ -6,3 +6,7 @@ WhatsApp*.zip
 *.zip
 desktop.ini
 Thumbs.db
+
+# Documentos e cópias que não vão para o site (o contrato tem CPF)
+*.pdf
+_backup-antes-reuniao/
