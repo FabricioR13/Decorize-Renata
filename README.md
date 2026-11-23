@@ -5,7 +5,7 @@ a montagem (Kit Bronze, Prata, Ouro ou Diamante), pegue e monte ou montagem, os 
 e fala direto com a Renata pelo WhatsApp. Desenvolvido pela **TF Solutions** a partir da base
 do catálogo Olimpo.
 
-**Demonstração:** https://fabricior13.github.io/decorize/ (depois de publicar)
+**Demonstração:** https://decorize.tfsolutions.com.br/ (depois de publicar)
 
 ## Vitrine (`index.html`)
 - Busca por tema (a caixa fica fixa no topo quando a cliente rola a página) e categorias **Menino, Menina, Adulto, Formatura, Chás e outros**,

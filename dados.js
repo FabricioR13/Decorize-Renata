@@ -111,7 +111,7 @@ const SEED_CONFIG = {
     whatsapp: "5551989378015",
     instagram: "decorize.locacoes",
     cidade: "Gravataí/RS e região",
-    enderecoSite: "https://fabricior13.github.io/decorize/",
+    enderecoSite: "https://decorize.tfsolutions.com.br/",
     // Recibos e contratos
     documento: "",
     enderecoEmpresa: "Gravataí/RS",

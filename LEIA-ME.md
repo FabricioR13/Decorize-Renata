@@ -53,7 +53,7 @@ da Olimpo. O download da imagem funciona pelo link publicado; aberto direto do c
 ## Publicar o link (GitHub Pages)
 Repositório sugerido: `FabricioR13/decorize`. Enviar todos os arquivos desta pasta
 (menos `_versao1-reserva-por-data`) e ativar o Pages. O endereço
-`https://fabricior13.github.io/decorize/` está nas tags de prévia do `index.html`;
+`https://decorize.tfsolutions.com.br/` está nas tags de prévia do `index.html`;
 se o nome do repositório mudar, troque lá também.
 
 ## Versão anterior
