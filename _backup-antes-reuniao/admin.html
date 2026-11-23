@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fff6ee">
+<meta name="robots" content="noindex">
+<title>Painel | Decorize</title>
+<link rel="icon" href="assets/icone.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="adm">
+
+<!-- Login -->
+<section class="login" id="telaLogin" hidden>
+  <form class="login-caixa" id="formLogin">
+    <img src="assets/logo.png" alt="Decorize" width="84" height="84">
+    <h1>Painel da Decorize</h1>
+    <p id="dicaLogin">Entre para cuidar dos temas e dos valores.</p>
+    <label class="campo" id="campoEmail" hidden><span>E-mail</span><input type="email" id="loginEmail" autocomplete="username"></label>
+    <label class="campo"><span>Senha</span><input type="password" id="loginSenha" autocomplete="current-password" required></label>
+    <p class="erro" id="erroLogin" hidden></p>
+    <button class="btn btn-laranja btn-bloco" type="submit">Entrar</button>
+    <a class="link" href="index.html">Voltar ao catálogo</a>
+  </form>
+</section>
+
+<!-- Painel -->
+<div id="telaPainel" hidden>
+  <header class="adm-topo">
+    <div class="wrap adm-topo-in">
+      <div class="marca">
+        <img src="assets/logo.png" alt="" width="44" height="44">
+        <span><strong>Decorize</strong><small>Painel da administradora</small></span>
+      </div>
+      <div class="adm-acoes">
+        <a class="btn btn-claro" href="index.html" target="_blank" rel="noopener">Ver catálogo</a>
+        <button class="btn btn-claro" id="sair">Sair</button>
+      </div>
+    </div>
+    <nav class="wrap abas" id="abas">
+      <button data-aba="agenda" aria-pressed="true">📅 Agenda</button>
+      <button data-aba="contatos" aria-pressed="false">Contatos <span class="bolha" id="bolhaContatos" hidden></span></button>
+      <button data-aba="temas" aria-pressed="false">Temas</button>
+      <button data-aba="post-dia" aria-pressed="false">📣 Post do dia</button>
+      <button data-aba="pecas" aria-pressed="false">🧰 Peças</button>
+      <button data-aba="kits" aria-pressed="false">Kits e valores</button>
+      <button data-aba="config" aria-pressed="false">Configurações</button>
+    </nav>
+  </header>
+
+  <main class="wrap adm-main">
+    <!-- AGENDA -->
+    <section data-painel="agenda">
+      <div class="ag-topo">
+        <div class="ag-nav">
+          <button class="btn btn-claro" id="agAnterior" aria-label="Mês anterior">‹</button>
+          <h2 id="agMes">mês</h2>
+          <button class="btn btn-claro" id="agProximo" aria-label="Próximo mês">›</button>
+          <button class="btn btn-claro" id="agHoje">Hoje</button>
+        </div>
+        <div class="ag-nav">
+          <div class="seg" id="agVisoes">
+            <button data-visao="mes" aria-pressed="true">Calendário</button>
+            <button data-visao="lista" aria-pressed="false">Próximos</button>
+          </div>
+          <button class="btn btn-laranja" id="agNovo">+ Novo evento</button>
+        </div>
+      </div>
+      <div class="ag-resumo" id="agResumo"></div>
+      <div class="caixa ag-lembretes" id="agLembretes" hidden></div>
+      <div class="ag-corpo" id="agVisaoMes">
+        <div class="caixa ag-cal-caixa"><div class="ag-cal" id="agCal"></div></div>
+        <div class="ag-dia" id="agDia">
+          <h2 id="agDiaTitulo">Dia</h2>
+          <div id="agDiaLista"></div>
+        </div>
+      </div>
+      <div class="ag-lista" id="agLista" hidden></div>
+      <div class="caixa ag-planilha">
+        <div>
+          <h2>Levar para a sua planilha</h2>
+          <p>Os eventos do mês na tela, com valor, sinal e quanto falta receber. “Copiar” cola direto no Excel; “Baixar” gera um arquivo que o Excel abre.</p>
+        </div>
+        <div class="ag-nav">
+          <button class="btn btn-claro" id="agColunasAbrir">⚙️ Escolher colunas</button>
+          <button class="btn btn-claro" id="agCopiar">📋 Copiar para o Excel</button>
+          <button class="btn btn-claro" id="agBaixar">⬇️ Baixar planilha (.csv)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTATOS -->
+    <section data-painel="contatos" hidden>
+      <div class="resumo" id="resumo"></div>
+      <div class="caixa">
+        <div class="caixa-topo">
+          <h2>Quem pediu tema pelo site</h2>
+          <p>Cada vez que alguém toca em “Quero esse tema”, aparece aqui. A conversa continua no seu WhatsApp.</p>
+        </div>
+        <div id="listaContatos"></div>
+      </div>
+    </section>
+
+    <!-- TEMAS -->
+    <section data-painel="temas" hidden>
+      <div class="barra">
+        <input class="entrada" id="buscaTemas" type="search" placeholder="Procurar tema…">
+        <select class="entrada" id="filtroCat"></select>
+        <button class="btn btn-laranja" id="novoTema">+ Novo tema</button>
+      </div>
+      <p class="dica">Cada tema tem 4 fotos: uma para cada montagem (Bronze, Prata, Ouro e Diamante). Pode ir completando aos poucos: enquanto falta foto, o catálogo mostra a mais completa como “foto ilustrativa”.</p>
+      <div id="listaTemas" class="lista-temas"></div>
+    </section>
+
+    <!-- POST DO DIA -->
+    <section data-painel="post-dia" hidden>
+      <div class="pd">
+        <div class="caixa pd-controles">
+          <p class="rotulo-adm">1. O que você quer postar hoje?</p>
+          <div class="pd-modelos" id="pdModelos"></div>
+          <label class="campo"><span>Frase principal</span><input id="pdTitulo"></label>
+          <label class="campo"><span>Frase de apoio</span><input id="pdSub"></label>
+
+          <p class="rotulo-adm">2. Escolha os temas <small id="pdQtd"></small></p>
+          <div class="pd-filtros">
+            <input class="entrada" id="pdBusca" type="search" placeholder="Procurar tema…">
+            <button type="button" class="link" id="pdLimpar">limpar escolha</button>
+          </div>
+          <div class="pd-cats" id="pdCats"></div>
+          <div class="pd-temas" id="pdTemas"></div>
+
+          <p class="rotulo-adm">3. Detalhes</p>
+          <div class="checks">
+            <label><input type="checkbox" id="pdPreco" checked> Mostrar “kits a partir de”</label>
+            <label><input type="checkbox" id="pdDatas" checked> Mostrar datas livres da agenda</label>
+          </div>
+          <div class="post-formatos" id="pdFormatos">
+            <button type="button" data-pdformato="grupo" aria-pressed="true">Grupos / feed (4:5)</button>
+            <button type="button" data-pdformato="status" aria-pressed="false">Status / stories (9:16)</button>
+          </div>
+        </div>
+        <div class="caixa pd-saida">
+          <div class="pd-previa" id="pdPrevia"></div>
+          <p class="erro" id="pdErro" hidden></p>
+          <div class="pd-extras">
+            <div class="pd-extras-topo">
+              <strong>Fotos e posts extras</strong>
+              <span>
+                <button type="button" class="btn btn-claro btn-mini" id="pdExtraIncluir">+ Incluir foto</button>
+                <button type="button" class="btn btn-claro btn-mini" id="pdExtraExcluir">🗑 Excluir</button>
+              </span>
+            </div>
+            <p class="pd-ajuda" id="pdExtrasAjuda">Tem um kit ou montagem que não está no catálogo, ou uma arte feita no Canva? Inclua a foto aqui e toque nela para mandar junto hoje.</p>
+            <div class="pd-extras-grade" id="pdExtras"></div>
+            <div class="pd-extras-topo" id="pdExcluirBarra" hidden>
+              <button type="button" class="btn btn-mini pd-btn-perigo" id="pdExcluirOk">Excluir selecionadas</button>
+              <button type="button" class="btn btn-claro btn-mini" id="pdExcluirCancelar">Cancelar</button>
+            </div>
+            <label class="pd-toggle"><input type="checkbox" id="pdGerada" checked> Mandar também a imagem montada pelo painel</label>
+            <input type="file" id="pdArquivo" accept="image/*" multiple hidden>
+          </div>
+          <label class="campo"><span>Texto para mandar junto</span><textarea id="pdTexto" rows="9"></textarea></label>
+          <div class="post-botoes">
+            <button type="button" class="btn btn-laranja" id="pdBaixar">Baixar imagens</button>
+            <button type="button" class="btn btn-claro" id="pdCopiar">Copiar texto</button>
+            <button type="button" class="btn btn-zap" id="pdEnviar">Enviar no WhatsApp</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PEÇAS -->
+    <section data-painel="pecas" hidden>
+      <div class="pc-resumo" id="pcResumo"></div>
+      <div class="barra pc-barra">
+        <input class="entrada" id="pcBusca" type="search" placeholder="Procurar peça…">
+        <select class="entrada" id="pcTema"></select>
+        <button class="btn btn-claro" id="pcTodas">Ver todas</button>
+        <button class="btn btn-laranja" id="pcNova">+ Nova peça</button>
+      </div>
+      <p class="dica">Cadastre capas, painéis, pelúcias e acessórios. Quando uma peça vai para o conserto, sai danificada ou some, mude a situação aqui: a agenda avisa nos eventos com aquele tema.</p>
+      <div id="pcLista" class="pc-lista"></div>
+    </section>
+
+    <!-- KITS -->
+    <section data-painel="kits" hidden>
+      <div class="caixa">
+        <div class="caixa-topo">
+          <h2>Kits (valem para todos os temas)</h2>
+          <p>Deixe o valor em branco quando aquela opção não existir para o kit.</p>
+        </div>
+        <form id="formKits" class="kits-form"></form>
+      </div>
+      <div class="caixa">
+        <div class="caixa-topo">
+          <h2>Adicionais</h2>
+          <p>Itens extras que a cliente pode marcar junto com o tema (número de LED, escadinha, lembrancinhas, convites…).</p>
+        </div>
+        <div id="listaAdicionaisAdm"></div>
+        <button class="btn btn-claro" id="novoAdicional" type="button">+ Novo adicional</button>
+      </div>
+    </section>
+
+    <!-- CONFIG -->
+    <section data-painel="config" hidden>
+      <div class="caixa">
+        <div class="caixa-topo"><h2>Contato e textos do catálogo</h2></div>
+        <form id="formConfig" class="grade-form">
+          <label class="campo"><span>Seu nome (aparece na mensagem)</span><input name="nomeDona"></label>
+          <label class="campo"><span>WhatsApp que recebe os pedidos</span><input name="whatsapp" inputmode="tel" placeholder="5551999999999"></label>
+          <label class="campo"><span>Instagram (sem @)</span><input name="instagram"></label>
+          <label class="campo"><span>Cidade / região atendida</span><input name="cidade"></label>
+          <label class="campo largo"><span>Endereço do catálogo (usado nos posts)</span><input name="enderecoSite" placeholder="https://..."></label>
+          <label class="campo largo"><span>Título do topo</span><input name="heroTitulo"></label>
+          <label class="campo largo"><span>Texto do topo</span><textarea name="heroSubtitulo" rows="2"></textarea></label>
+          <label class="campo largo"><span>Aviso (deixe vazio para esconder)</span><textarea name="aviso" rows="2"></textarea></label>
+          <label class="campo largo"><span>Como funciona o pegue e monte</span><textarea name="textoPegueMonte" rows="2"></textarea></label>
+          <label class="campo largo"><span>Como funciona a montagem</span><textarea name="textoMontagem" rows="2"></textarea></label>
+          <div class="largo"><button class="btn btn-laranja" type="submit">Salvar</button></div>
+        </form>
+      </div>
+      <div class="caixa">
+        <div class="caixa-topo">
+          <h2>Recibos e contratos</h2>
+          <p>Esses dados aparecem no recibo e no contrato gerados pela agenda.</p>
+        </div>
+        <form id="formDocs" class="grade-form">
+          <label class="campo"><span>CPF ou CNPJ</span><input name="documento" placeholder="000.000.000-00"></label>
+          <label class="campo"><span>Chave Pix</span><input name="chavePix" placeholder="CPF, e-mail, telefone ou chave aleatória"></label>
+          <label class="campo largo"><span>Endereço (retirada das peças)</span><input name="enderecoEmpresa" placeholder="Rua, número — bairro, Gravataí/RS"></label>
+          <label class="campo largo"><span>Prazo do saldo</span><input name="prazoSaldo" placeholder="no dia da retirada ou da montagem"></label>
+          <label class="campo largo"><span>Condições do contrato (uma por linha)</span><textarea name="clausulasContrato" rows="8"></textarea>
+            <small>É um modelo. Vale revisar com quem cuida da parte jurídica antes de usar.</small></label>
+          <div class="largo"><button class="btn btn-laranja" type="submit">Salvar</button></div>
+        </form>
+      </div>
+      <div class="caixa" id="caixaDemo" hidden>
+        <div class="caixa-topo">
+          <h2>Demonstração</h2>
+          <p>Nesta demonstração tudo fica salvo só neste navegador. Recomeçar volta os temas, valores e contatos de exemplo.</p>
+        </div>
+        <button class="btn btn-claro" id="recomecar" type="button">Recomeçar demonstração</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Editor de tema -->
+<div class="fundo" id="editor" hidden>
+  <form class="editor" id="formTema">
+    <div class="editor-topo">
+      <h2 id="editorTitulo">Novo tema</h2>
+      <button type="button" class="fechar" id="fecharEditor" aria-label="Fechar">✕</button>
+    </div>
+    <div class="editor-corpo">
+      <label class="campo"><span>Nome do tema</span><input name="nome" required placeholder="Ex.: Homem-Aranha"></label>
+      <fieldset class="campo">
+        <legend>Onde aparece (pode marcar mais de um)</legend>
+        <div class="checks" id="checksCat"></div>
+      </fieldset>
+      <label class="campo"><span>Subcategoria</span><input name="sub" list="listaSubs" placeholder="Ex.: 15 anos, Direito, Chá de bebê, 1 aninho"><datalist id="listaSubs"></datalist></label>
+      <label class="campo"><span>Descrição curta</span><textarea name="descricao" rows="2" placeholder="Cores e detalhes do tema"></textarea></label>
+      <fieldset class="campo">
+        <legend>Fotos das 4 montagens</legend>
+        <div class="fotos-nivel" id="fotosNivel"></div>
+        <small>Fotos em pé (vertical) ficam melhores. Elas são reduzidas automaticamente.</small>
+      </fieldset>
+      <div class="checks">
+        <label><input type="checkbox" name="destaque"> Mostrar como “Mais pedido”</label>
+        <label><input type="checkbox" name="novo"> Mostrar como “Novidade”</label>
+        <label><input type="checkbox" name="ativo" checked> Aparece no catálogo</label>
+      </div>
+    </div>
+    <div class="editor-pe">
+      <button type="button" class="link perigo" id="excluirTema">Excluir tema</button>
+      <button type="submit" class="btn btn-laranja">Salvar tema</button>
+    </div>
+  </form>
+</div>
+
+<!-- Evento da agenda -->
+<div class="fundo" id="agEditor" hidden>
+  <form class="editor ag-editor" id="agForm">
+    <div class="editor-topo">
+      <h2 id="agEditorTitulo">Novo evento</h2>
+      <button type="button" class="fechar" id="agFechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="editor-corpo">
+      <div class="ag-tema-linha">
+        <div class="ag-previa" id="agPrevia"></div>
+        <div class="ag-tema-campos">
+          <label class="campo"><span>Tema</span><select name="temaId"></select></label>
+          <label class="campo"><span>Kit</span><select name="kitId"></select></label>
+          <div class="campo"><span>Como vai ser</span>
+            <div class="checks">
+              <label><input type="radio" name="modalidade" value="pegue" checked> 📦 Pegue e monte</label>
+              <label><input type="radio" name="modalidade" value="montagem"> 🚚 Montagem</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="ev-alerta" id="agConflito" hidden></p>
+      <div id="agPecas" hidden></div>
+      <div class="grade-form">
+        <label class="campo"><span>Data do evento</span><input type="date" name="data" required></label>
+        <label class="campo"><span>Horário da festa</span><input type="time" name="horaFesta"></label>
+        <label class="campo"><span id="agRotMontagem">Retirada às</span><input type="time" name="horaMontagem"></label>
+        <span></span>
+        <label class="campo"><span id="agRotDevolucao">Devolução em</span><input type="date" name="devolucao"></label>
+        <label class="campo"><span id="agRotHoraDev">Devolução às</span><input type="time" name="horaDevolucao"></label>
+        <label class="campo"><span>Cliente</span><input name="cliente" placeholder="Nome de quem contratou"></label>
+        <label class="campo"><span>WhatsApp da cliente</span><input name="telefone" inputmode="tel" placeholder="(51) 99999-9999"></label>
+        <label class="campo"><span>Local</span><input name="local" placeholder="Salão, casa da cliente…"></label>
+        <label class="campo"><span>Endereço</span><input name="endereco" placeholder="Rua, número — cidade"></label>
+      </div>
+      <fieldset class="campo"><legend>Adicionais</legend><div class="checks" id="agAdicionais"></div></fieldset>
+      <div class="grade-form">
+        <label class="campo"><span>Valor total (R$)</span><input name="valor" inputmode="decimal"><small><span id="agSugestao"></span> <button type="button" class="link" id="agUsarTabela">usar valor da tabela</button></small></label>
+        <label class="campo"><span>Sinal recebido (R$)</span><input name="sinal" inputmode="decimal" placeholder="0"></label>
+        <label class="campo"><span>Situação</span>
+          <select name="status">
+            <option value="orcamento">Orçamento</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="realizado">Realizado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </label>
+      </div>
+      <label class="campo"><span>Observações</span><textarea name="obs" rows="2" placeholder="Nome e idade do aniversariante, cores, recados…"></textarea></label>
+    </div>
+    <div class="editor-pe">
+      <button type="button" class="link perigo" id="agExcluir">Excluir evento</button>
+      <button type="submit" class="btn btn-laranja">Salvar na agenda</button>
+    </div>
+  </form>
+</div>
+
+<!-- Colunas da planilha -->
+<div class="fundo" id="agColunas" hidden>
+  <div class="editor">
+    <div class="editor-topo">
+      <h2>Colunas da sua planilha</h2>
+      <button type="button" class="fechar" id="colFechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="editor-corpo">
+      <p class="dica">Deixe na mesma ordem e com os mesmos nomes da sua planilha. Assim, ao colar, cada informação cai na coluna certa.</p>
+      <div id="colLista" class="col-lista"></div>
+      <div class="checks"><label><input type="checkbox" id="colCabecalho" checked> Copiar a linha com os nomes das colunas (desmarque para colar só os eventos embaixo dos que já existem)</label></div>
+      <p class="rotulo-adm">Como vai ficar</p>
+      <div class="col-exemplo" id="colExemplo"></div>
+    </div>
+    <div class="editor-pe">
+      <button type="button" class="link" id="colPadrao">Voltar ao padrão</button>
+      <button type="button" class="btn btn-laranja" id="colSalvar">Salvar colunas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Peça -->
+<div class="fundo" id="pcEditor" hidden>
+  <form class="editor" id="pcForm">
+    <div class="editor-topo">
+      <h2 id="pcEditorTitulo">Nova peça</h2>
+      <button type="button" class="fechar" id="pcFechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="editor-corpo">
+      <label class="campo"><span>Peça</span><input name="nome" placeholder="Ex.: Capa do painel redondo, ursinho grande, bandeja espelhada"></label>
+      <div class="grade-form">
+        <label class="campo"><span>De qual tema</span><select name="temaId"></select></label>
+        <label class="campo"><span>Quantidade</span><input name="quantidade" type="number" min="1" value="1"></label>
+      </div>
+      <label class="campo"><span>Situação</span>
+        <select name="situacao">
+          <option value="ok">✅ Em uso</option>
+          <option value="manutencao">🧵 Em manutenção</option>
+          <option value="danificada">⚠️ Danificada</option>
+          <option value="perdida">❓ Perdida</option>
+        </select>
+      </label>
+      <label class="campo"><span>Observação</span><textarea name="obs" rows="3" placeholder="O que aconteceu, onde está, quanto custou o conserto…"></textarea></label>
+    </div>
+    <div class="editor-pe">
+      <button type="button" class="link perigo" id="pcExcluir">Excluir peça</button>
+      <button type="submit" class="btn btn-laranja">Salvar peça</button>
+    </div>
+  </form>
+</div>
+
+<!-- Post do tema -->
+<div class="fundo" id="post" hidden>
+  <div class="editor post">
+    <div class="editor-topo">
+      <h2 id="postTitulo">Post do tema</h2>
+      <button type="button" class="fechar" id="fecharPost" aria-label="Fechar">✕</button>
+    </div>
+    <div class="editor-corpo post-corpo">
+      <div class="post-formatos" id="postFormatos">
+        <button type="button" data-formato="feed" aria-pressed="true">Feed / grupos (4:5)</button>
+        <button type="button" data-formato="stories" aria-pressed="false">Stories / status (9:16)</button>
+      </div>
+      <div class="post-previa"><canvas id="postCanvas" width="1080" height="1350"></canvas></div>
+      <p class="erro" id="postErro" hidden></p>
+      <label class="campo"><span>Texto para os grupos e a legenda</span><textarea id="postTexto" rows="7"></textarea></label>
+      <div class="post-botoes">
+        <button type="button" class="btn btn-laranja" id="postBaixar">Baixar imagem</button>
+        <button type="button" class="btn btn-claro" id="postCopiar">Copiar texto</button>
+        <button type="button" class="btn btn-zap" id="postEnviar">Enviar no WhatsApp</button>
+      </div>
+      <p class="dica">Baixe a imagem, mande no grupo ou no status e cole o texto junto. O link leva direto para este tema no catálogo.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<!-- Para usar com Firebase (fora da demonstração), tire o comentário das 3 linhas abaixo:
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+-->
+<script src="dados.js"></script>
+<script src="documentos.js"></script>
+<script src="pecas.js"></script>
+<script src="agenda.js"></script>
+<script src="post-dia.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
