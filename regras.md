@@ -60,6 +60,28 @@ service cloud.firestore {
     match /eventos/{doc} { allow read, write: if isAdmin(); }
     match /pecas/{doc}   { allow read, write: if isAdmin(); }
 
+    // Auto-cadastro da cliente: cada link é um registro com código aleatório (o ID do documento).
+    // Sem login, só dá para ABRIR um link específico enquanto ele está aguardando e no prazo,
+    // e ENVIAR os dados uma vez (nome, CPF, WhatsApp e endereço, com tamanho limitado).
+    // Ninguém lista os links nem lê dados já enviados. Depois que o painel importa, o registro é apagado.
+    match /cadastros/{token} {
+      allow get: if isAdmin()
+        || (resource.data.status == 'aguardando' && request.time.toMillis() < resource.data.expiraEm);
+      allow list, create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        resource.data.status == 'aguardando'
+        && request.time.toMillis() < resource.data.expiraEm
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'dados', 'preenchidoEm'])
+        && request.resource.data.status == 'preenchido'
+        && request.resource.data.dados.keys().hasOnly(['nome', 'cpf', 'telefone', 'endereco'])
+        && request.resource.data.dados.nome is string && request.resource.data.dados.nome.size() <= 80
+        && request.resource.data.dados.cpf is string && request.resource.data.dados.cpf.size() <= 14
+        && request.resource.data.dados.telefone is string && request.resource.data.dados.telefone.size() <= 15
+        && request.resource.data.dados.endereco is string && request.resource.data.dados.endereco.size() <= 200
+        && request.resource.data.preenchidoEm is string && request.resource.data.preenchidoEm.size() <= 40
+      );
+    }
+
     // Qualquer outra coleção que surgir: fechada por padrão
     match /{caminho=**} { allow read, write: if false; }
   }
@@ -73,6 +95,7 @@ service cloud.firestore {
 - **configuracoes/privado**: CPF/CNPJ, chave Pix, endereço e cláusulas do contrato. Só admin lê — não aparece para quem abre o código do site.
 - **contatos**: cada clique em "Quero esse tema". O site só cria (com os campos e tamanhos certos); só admin vê.
 - **eventos e pecas**: agenda (nomes, telefones, endereços, valores) e controle das peças. Só admin.
+- **cadastros**: links de auto-cadastro que a Renata manda pela agenda. A cliente só abre o próprio link (código aleatório de 28 letras, que vale 7 dias e uma vez só) e envia nome, CPF, WhatsApp e endereço. Ninguém consegue listar os links nem ler dados já enviados. O painel passa os dados para o evento e apaga o registro.
 - Qualquer outra coleção fica fechada.
 
 ## Lista de acesso ao painel (admins)

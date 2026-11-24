@@ -223,7 +223,9 @@
           <button class="btn btn-claro" data-doc="recibo" data-ev="${escaparHtml(e.id)}">🧾 Recibo</button>
           <button class="btn btn-claro" data-doc="contrato" data-ev="${escaparHtml(e.id)}">📄 Contrato</button>
           ${fim(e) <= hoje() && e.status !== "cancelado" ? `<button class="btn btn-claro" data-dano="${escaparHtml(e.id)}">🧰 Registrar dano</button>` : ""}
+          ${e.status !== "cancelado" && fim(e) >= hoje() ? `<button class="btn btn-claro" data-cadastro="${escaparHtml(e.id)}">📝 ${e.cadastroEm ? "Pedir dados de novo" : e.cadastroToken ? "Reenviar link de cadastro" : "Link de cadastro"}</button>` : ""}
           ${fim(e) < hoje() && (e.cpf || e.telefone || e.endereco) ? `<button class="btn btn-claro" data-apagar-dados="${escaparHtml(e.id)}">🧹 Apagar dados da cliente</button>` : ""}
+          ${e.cadastroEm ? `<small class="ev-cadastro ok">✅ A cliente preencheu os dados em ${dataCurta(e.cadastroEm.slice(0, 10))}</small>` : e.cadastroToken ? `<small class="ev-cadastro">⏳ Link de cadastro enviado, aguardando a cliente</small>` : ""}
           ${e.dadosApagadosEm ? `<small class="ev-dados-apagados">Dados da cliente apagados em ${dataCurta(e.dadosApagadosEm.slice(0, 10))}</small>` : ""}
         </div>
       </div>
@@ -351,6 +353,71 @@
       ? `⚠️ <b>${escaparHtml(ev.temaNome)}</b> já está marcado para ${conf.map((o) => `${escaparHtml(o.cliente)} (${dataCurta(o.data)}${fim(o) !== o.data ? ` a ${dataCurta(fim(o))}` : ""})`).join(", ")}. Confira se dá tempo de voltar as peças.`
       : "";
   }
+
+  /* ---------- auto-cadastro da cliente (link de uso único) ---------- */
+  const DIAS_LINK = 7;
+
+  function novoToken() {
+    const letras = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    const n = new Uint8Array(28);
+    crypto.getRandomValues(n);
+    return [...n].map((x) => letras[x % letras.length]).join("");
+  }
+
+  function baseSite() {
+    let base = String(P().d.config.enderecoSite || "").trim().replace(/#.*$/, "");
+    if (!base) base = new URL("index.html", location.href).href;
+    return base.replace(/index\.html$/, "").replace(/\/?$/, "/");
+  }
+
+  /** Gera o link só desta festa, guarda no evento e abre o WhatsApp da cliente com a mensagem pronta. */
+  async function linkCadastro(ev) {
+    if (!ev) return;
+    const token = novoToken();
+    // o link antigo (se houver) deixa de valer
+    if (ev.cadastroToken) { try { await Dados.excluir("cadastros", ev.cadastroToken); } catch (e) { /* já não existia */ } }
+    await Dados.salvar("cadastros", token, {
+      eventoId: ev.id, temaNome: ev.temaNome || "", data: ev.data || "",
+      nomeSugerido: ev.cliente || "", telefoneSugerido: String(ev.telefone || "").replace(/\D/g, ""),
+      status: "aguardando", criadoEm: new Date().toISOString(), expiraEm: Date.now() + DIAS_LINK * 86400000,
+    });
+    await Dados.salvar("eventos", ev.docId || ev.id, { cadastroToken: token });
+    const link = `${baseSite()}cadastro.html#${token}`;
+    const primeiro = String(ev.cliente || "").split(" ")[0];
+    const msg = `Oi${primeiro ? `, ${primeiro}` : ""}! Aqui é a ${P().d.config.nomeDona || "Renata"}, da ${P().d.config.nomeLoja || "Decorize"} 🧡\n\nPara eu preparar o seu contrato${ev.temaNome ? ` do tema *${ev.temaNome}*` : ""}, preencha seus dados neste link (leva 1 minutinho):\n${link}\n\nO link vale por ${DIAS_LINK} dias.`;
+    const tel = String(ev.telefone || "").replace(/\D/g, "");
+    if (tel) window.open(`https://wa.me/55${tel.replace(/^55/, "")}?text=${encodeURIComponent(msg)}`, "_blank", "noopener");
+    else {
+      try { await navigator.clipboard.writeText(msg); } catch (e) { prompt("Copie a mensagem com o link:", msg); }
+    }
+    await P().recarregar();
+    P().toast(tel ? "Link de cadastro gerado! Envie no WhatsApp." : "Mensagem com o link copiada! Cole no WhatsApp da cliente.");
+  }
+
+  /** Quando a cliente preenche, os dados entram no evento e o registro temporário é apagado. */
+  let sincronizando = false;
+  async function sincronizarCadastros() {
+    if (sincronizando || !P() || !P().d.eventos) return;
+    sincronizando = true;
+    let mudou = 0;
+    try {
+      const prontos = await Dados.listarOnde("cadastros", "status", "preenchido");
+      for (const c of prontos) {
+        const ev = P().d.eventos.find((x) => x.id === c.eventoId);
+        if (ev && c.dados) {
+          await Dados.salvar("eventos", ev.docId || ev.id, {
+            cliente: c.dados.nome || ev.cliente, cpf: c.dados.cpf || "", telefone: c.dados.telefone || ev.telefone || "",
+            endereco: c.dados.endereco || ev.endereco || "", cadastroEm: c.preenchidoEm || new Date().toISOString(), cadastroToken: "",
+          });
+          mudou++;
+        }
+        await Dados.excluir("cadastros", c.docId);
+      }
+    } catch (e) { console.warn("Cadastros:", e); }
+    sincronizando = false;
+    if (mudou) { await P().recarregar(); P().toast(`📝 ${mudou} cliente(s) preencheram os dados para o contrato!`); }
+  }
+  (window.PainelExtras = window.PainelExtras || []).push(() => { sincronizarCadastros(); });
 
   /* ---------- peças do evento (pré-marcadas pelo tema e kit) ---------- */
   function desenharPecasEditor(ev) {
@@ -627,6 +694,8 @@
         Dados.salvar("eventos", ev.docId || ev.id, { status: "realizado" }).then(() => P().recarregar()).then(() => P().toast("Evento marcado como realizado. ✅"));
         return;
       }
+      const cad = e.target.dataset.cadastro;
+      if (cad) { linkCadastro(P().d.eventos.find((x) => x.id === cad)); return; }
       const apagar = e.target.dataset.apagarDados;
       if (apagar) {
         const ev = P().d.eventos.find((x) => x.id === apagar);

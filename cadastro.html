@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#fff6ee">
+<title>Seus dados para o contrato | Decorize</title>
+<link rel="icon" href="assets/icone.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="admin.css">
+<style>
+  .cad-caixa { max-width: 440px; text-align: left; }
+  .cad-caixa h1, .cad-caixa > p, .cad-caixa > img { text-align: center; }
+  .cad-festa { padding: 12px 14px; border-radius: 14px; background: var(--laranja-claro); color: var(--tinta); font-weight: 700; font-size: 14px; text-align: center; }
+  .cad-festa b { color: var(--laranja-escuro); }
+  .cad-aviso { font-size: 12px; color: var(--suave); font-weight: 600; line-height: 1.45; }
+  .cad-ok { font-size: 44px; text-align: center; }
+</style>
+</head>
+<body class="adm">
+<section class="login">
+  <form class="login-caixa cad-caixa" id="cadForm" novalidate>
+    <img src="assets/logo.png" alt="Decorize" width="72" height="72">
+    <div id="cadCarregando"><p>Carregando…</p></div>
+
+    <div id="cadInvalido" hidden>
+      <h1>Link indisponível</h1>
+      <p>Este link já foi usado ou expirou. Fale com a Decorize pelo WhatsApp que ela manda um novo. 🧡</p>
+    </div>
+
+    <div id="cadPronto" hidden>
+      <p class="cad-ok">✅</p>
+      <h1>Dados enviados!</h1>
+      <p>Obrigada! A Decorize já recebeu seus dados e vai preparar o contrato. 🧡</p>
+    </div>
+
+    <div id="cadCampos" hidden style="display:grid;gap:12px">
+      <h1>Seus dados para o contrato</h1>
+      <p class="cad-festa" id="cadFesta"></p>
+      <label class="campo"><span>Nome completo</span><input id="cNome" autocomplete="name" maxlength="80" required></label>
+      <label class="campo"><span>CPF</span><input id="cCpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" required></label>
+      <label class="campo"><span>WhatsApp</span><input id="cTel" inputmode="tel" autocomplete="tel" placeholder="(51) 99999-9999" required></label>
+      <label class="campo"><span>Endereço completo</span><textarea id="cEnd" rows="2" maxlength="200" autocomplete="street-address" placeholder="Rua, número, bairro e cidade" required></textarea></label>
+      <p class="erro" id="cadErro" hidden></p>
+      <button class="btn btn-laranja btn-bloco" type="submit" id="cadEnviar">Enviar meus dados</button>
+      <p class="cad-aviso">Seus dados são usados somente para o contrato desta locação e para eventual cobrança de danos ou atrasos, e não são compartilhados com ninguém. Este link vale uma vez só.</p>
+    </div>
+  </form>
+</section>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="dados.js"></script>
+<script>
+// Decorize — auto-cadastro da cliente (link de uso único, gerado na agenda) | TF Solutions
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const token = decodeURIComponent((location.hash || "").replace(/^#/, "")).trim();
+  const mostrar = (id) => ["cadCarregando", "cadInvalido", "cadPronto", "cadCampos"].forEach((x) => { $(x).hidden = x !== id; });
+
+  const mascaraTelefone = (v) => {
+    let d = String(v || "").replace(/\D/g, "");
+    if (d.length > 11 && d.startsWith("55")) d = d.slice(2);
+    d = d.slice(0, 11);
+    if (d.length <= 2) return d ? `(${d}` : "";
+    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  };
+  const mascaraCpf = (v) => String(v || "").replace(/\D/g, "").slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3").replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{1,2})$/, "$1.$2.$3-$4");
+  const cpfValido = (v) => {
+    const d = String(v || "").replace(/\D/g, "");
+    if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+    const dv = (n) => { let s = 0; for (let i = 0; i < n; i++) s += Number(d[i]) * (n + 1 - i); const r = (s * 10) % 11; return r === 10 ? 0 : r; };
+    return dv(9) === Number(d[9]) && dv(10) === Number(d[10]);
+  };
+  const dataBR = (iso) => String(iso || "").split("-").reverse().join("/");
+
+  $("cCpf").addEventListener("input", (e) => { e.target.value = mascaraCpf(e.target.value); });
+  $("cTel").addEventListener("input", (e) => { e.target.value = mascaraTelefone(e.target.value); });
+
+  async function iniciar() {
+    if (!/^[A-Za-z0-9]{20,}$/.test(token)) { mostrar("cadInvalido"); return; }
+    let cad = null;
+    try { cad = await Dados.obter("cadastros", token); } catch (e) { cad = null; }
+    if (!cad || cad.status !== "aguardando" || Number(cad.expiraEm) < Date.now()) { mostrar("cadInvalido"); return; }
+    $("cadFesta").innerHTML = `${escaparHtml(cad.temaNome || "Sua festa")}${cad.data ? ` · <b>${escaparHtml(dataBR(cad.data))}</b>` : ""}`;
+    if (cad.nomeSugerido) $("cNome").value = cad.nomeSugerido;
+    if (cad.telefoneSugerido) $("cTel").value = mascaraTelefone(cad.telefoneSugerido);
+    mostrar("cadCampos");
+  }
+
+  $("cadForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const erro = (t) => { $("cadErro").textContent = t; $("cadErro").hidden = false; };
+    $("cadErro").hidden = true;
+    const dados = {
+      nome: $("cNome").value.trim().replace(/\s+/g, " "),
+      cpf: $("cCpf").value.trim(),
+      telefone: $("cTel").value.trim(),
+      endereco: $("cEnd").value.trim().replace(/\s+/g, " "),
+    };
+    if (dados.nome.split(" ").length < 2) return erro("Escreva o nome completo.");
+    if (!cpfValido(dados.cpf)) return erro("Confira o CPF: os números não batem.");
+    const tel = dados.telefone.replace(/\D/g, "");
+    if (tel.length !== 10 && tel.length !== 11) return erro("Confira o WhatsApp com DDD.");
+    if (dados.endereco.length < 8) return erro("Escreva o endereço completo.");
+    $("cadEnviar").disabled = true;
+    try {
+      await Dados.salvar("cadastros", token, { status: "preenchido", dados, preenchidoEm: new Date().toISOString() });
+      mostrar("cadPronto");
+    } catch (err) {
+      console.error(err);
+      $("cadEnviar").disabled = false;
+      erro("Não deu para enviar. Este link pode ter expirado: fale com a Decorize pelo WhatsApp.");
+    }
+  });
+
+  iniciar();
+})();
+</script>
+</body>
+</html>

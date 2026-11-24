@@ -416,3 +416,6 @@
 .ag-peca-status:empty { display: none; }
 .ag-peca.falta .ag-peca-status { color: #c0392b; }
 .ev-alerta.ev-falta { background: #fff3f2; border-color: #f3b3ad; color: #a5281e; }
+
+.ev-cadastro { align-self: center; color: #9a6a00; font-size: 12px; font-weight: 800; }
+.ev-cadastro.ok { color: #1a8a47; }
