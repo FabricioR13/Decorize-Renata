@@ -282,6 +282,9 @@ const DadosDemo = {
         banco[col][String(id)] = { ...(banco[col][String(id)] || {}), ...limpo };
         this._gravar(banco);
     },
+    async listarOnde(col, campo, valor) {
+        return (await this.listar(col)).filter((d) => d[campo] === valor);
+    },
     async adicionar(col, dados) {
         const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
         await this.salvar(col, id, dados);
@@ -322,6 +325,11 @@ const DadosFirebase = {
         this._init();
         const limpo = { ...dados }; delete limpo.docId;
         await this._db.collection(col).doc(String(id)).set(limpo, { merge: true });
+    },
+    async listarOnde(col, campo, valor) {
+        this._init();
+        const snap = await this._db.collection(col).where(campo, "==", valor).get();
+        return snap.docs.map((d) => ({ ...d.data(), docId: d.id }));
     },
     async adicionar(col, dados) {
         this._init();
@@ -389,6 +397,33 @@ function fotoDoNivel(tema, nivel) {
     if (f[nivel]) return { src: f[nivel], ilustrativa: false };
     const outra = [...NIVEIS].reverse().find((n) => f[n]);
     return outra ? { src: f[outra], ilustrativa: true } : { src: "", ilustrativa: true };
+}
+
+/**
+ * Padrão TF para fotos enviadas no painel: no máximo 1000px no lado maior, em WebP (arquivo menor).
+ * Se o navegador não gerar WebP (alguns iPhones), sai em JPEG. A foto não é cortada aqui.
+ */
+function reduzirImagem(arquivo, max = 1000) {
+    return new Promise((resolve, reject) => {
+        const leitor = new FileReader();
+        leitor.onerror = reject;
+        leitor.onload = () => {
+            const img = new Image();
+            img.onerror = reject;
+            img.onload = () => {
+                const escala = Math.min(1, max / Math.max(img.width, img.height));
+                const c = document.createElement("canvas");
+                c.width = Math.round(img.width * escala);
+                c.height = Math.round(img.height * escala);
+                c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+                let dados = c.toDataURL("image/webp", 0.8);
+                if (!dados.startsWith("data:image/webp")) dados = c.toDataURL("image/jpeg", 0.8);
+                resolve(dados);
+            };
+            img.src = leitor.result;
+        };
+        leitor.readAsDataURL(arquivo);
+    });
 }
 
 function fotoCapa(tema) {

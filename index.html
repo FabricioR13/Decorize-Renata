@@ -151,8 +151,11 @@
 <div class="fundo" id="fundo" hidden>
   <div class="painel-tema" role="dialog" aria-modal="true" aria-labelledby="temaNome">
     <button class="fechar" id="fechar" aria-label="Fechar">✕</button>
-    <div class="tema-foto">
-      <img id="temaFoto" alt="">
+    <div class="tema-foto" id="temaFotoCaixa">
+      <div class="carrossel" id="carrossel"></div>
+      <button class="seta seta-ant" id="setaAnt" type="button" aria-label="Foto anterior" hidden>‹</button>
+      <button class="seta seta-prox" id="setaProx" type="button" aria-label="Próxima foto" hidden>›</button>
+      <div class="pontinhos" id="pontinhos" hidden></div>
       <span class="ilustrativa" id="temaIlustrativa" hidden>Foto ilustrativa — montagem em breve</span>
     </div>
     <div class="tema-info">

@@ -18,6 +18,7 @@
     nivel: "bronze",
     modalidade: "pegue",
     extras: new Set(),
+    galeria: {},      // fotos extras por tema: { temaId: { bronze: [src...] } }
   };
 
   const linkZap = (texto) => `https://wa.me/${String(estado.config.whatsapp).replace(/\D/g, "")}${texto ? `?text=${encodeURIComponent(texto)}` : ""}`;
@@ -201,7 +202,7 @@
       const selo = t.novo ? `<span class="selo-card novo">Novidade</span>` : t.destaque ? `<span class="selo-card">Mais pedido</span>` : "";
       return `<li><button class="card" data-tema="${escaparHtml(t.id || t.docId)}">
         <div class="card-foto">
-          ${capa ? `<img src="${escaparHtml(capa)}" alt="Decoração tema ${escaparHtml(t.nome)}" loading="lazy">` : `<div class="card-sem-foto">🎈</div>`}
+          ${capa ? `${t.fotoInteira ? `<img class="foto-fundo" src="${escaparHtml(capa)}" alt="" aria-hidden="true" loading="lazy">` : ""}<img class="${t.fotoInteira ? "foto-inteira" : ""}" src="${escaparHtml(capa)}" alt="Decoração tema ${escaparHtml(t.nome)}" loading="lazy">` : `<div class="card-sem-foto">🎈</div>`}
           ${selo}
           <span class="montagens" title="${qtd} de 4 montagens com foto">${bolinhas}</span>
         </div>
@@ -266,6 +267,7 @@
     $("temaNome").textContent = tema.nome;
     $("temaDesc").textContent = tema.descricao || "";
     desenharTema();
+    carregarGaleria(tema);
     $("fundo").hidden = false;
     document.body.classList.add("travado");
     if (atualizarEndereco && location.hash !== `#tema/${id}`) history.pushState(null, "", `#tema/${id}`);
@@ -293,13 +295,47 @@
     return { base, extras, total: base + extras };
   }
 
+  /** Busca as fotos extras do tema só quando ele é aberto (a página inicial continua leve). */
+  async function carregarGaleria(tema) {
+    const id = tema.id || tema.docId;
+    if (estado.galeria[id]) return;
+    estado.galeria[id] = {};
+    try {
+      const fotos = await Dados.listarOnde("galeria", "temaId", id);
+      fotos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).forEach((f) => {
+        (estado.galeria[id][f.nivel] = estado.galeria[id][f.nivel] || []).push(f.src);
+      });
+    } catch (e) { console.warn("Galeria indisponível:", e); }
+    if (estado.aberto && (estado.aberto.id || estado.aberto.docId) === id) desenharFotos();
+  }
+
+  function desenharFotos() {
+    const tema = estado.aberto;
+    const id = tema.id || tema.docId;
+    const principal = fotoDoNivel(tema, estado.nivel);
+    const extras = ((estado.galeria[id] || {})[estado.nivel]) || [];
+    const fotos = [principal.src || "assets/logo.png", ...extras];
+    const alt = `${tema.nome} — ${comboDe(estado.nivel).nome}`;
+    $("temaFotoCaixa").classList.toggle("inteira", !!tema.fotoInteira);
+    $("carrossel").innerHTML = fotos.map((src, i) => `<div class="slide">
+      ${tema.fotoInteira ? `<img class="foto-fundo" src="${escaparHtml(src)}" alt="" aria-hidden="true">` : ""}
+      <img src="${escaparHtml(src)}" alt="${escaparHtml(alt)}${fotos.length > 1 ? ` (foto ${i + 1} de ${fotos.length})` : ""}" ${i ? 'loading="lazy"' : ""}>
+    </div>`).join("");
+    $("carrossel").scrollLeft = 0;
+    const varias = fotos.length > 1;
+    $("setaAnt").hidden = $("setaProx").hidden = $("pontinhos").hidden = !varias;
+    $("pontinhos").innerHTML = varias ? fotos.map((_, i) => `<i class="${i ? "" : "ativo"}"></i>`).join("") : "";
+    $("temaIlustrativa").hidden = !principal.ilustrativa || !principal.src;
+  }
+
+  function fotoAtual() {
+    const c = $("carrossel");
+    return c.clientWidth ? Math.round(c.scrollLeft / c.clientWidth) : 0;
+  }
+
   function desenharTema() {
     const tema = estado.aberto;
-    const foto = fotoDoNivel(tema, estado.nivel);
-    const img = $("temaFoto");
-    img.src = foto.src || "assets/logo.png";
-    img.alt = `${tema.nome} — ${comboDe(estado.nivel).nome}`;
-    $("temaIlustrativa").hidden = !foto.ilustrativa || !foto.src;
+    desenharFotos();
 
     $("niveis").innerHTML = NIVEIS.map((n) => `
       <button class="nivel ${n}" role="tab" data-nivel="${n}" aria-selected="${estado.nivel === n}">${escaparHtml(comboDe(n).nome.replace(/^Kit\s+/i, ""))}</button>`).join("");
@@ -463,6 +499,15 @@
       desenharTema();
     });
     $("quero").addEventListener("click", quero);
+    // carrossel de fotos do tema
+    const irPara = (i) => { const c = $("carrossel"); c.scrollTo({ left: i * c.clientWidth, behavior: "smooth" }); };
+    $("setaAnt").addEventListener("click", () => irPara(Math.max(0, fotoAtual() - 1)));
+    $("setaProx").addEventListener("click", () => irPara(Math.min($("carrossel").children.length - 1, fotoAtual() + 1)));
+    $("carrossel").addEventListener("scroll", () => {
+      const i = fotoAtual();
+      [...$("pontinhos").children].forEach((p, j) => p.classList.toggle("ativo", j === i));
+      $("temaIlustrativa").style.visibility = i ? "hidden" : "";
+    }, { passive: true });
     $("compartilhar").addEventListener("click", compartilhar);
     window.addEventListener("popstate", lerRota);
     window.addEventListener("hashchange", lerRota);

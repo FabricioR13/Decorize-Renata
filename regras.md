@@ -29,6 +29,8 @@ service cloud.firestore {
     match /categorias/{doc} { allow read: if true; allow write: if isAdmin(); }
     match /combos/{doc}     { allow read: if true; allow write: if isAdmin(); }
     match /adicionais/{doc} { allow read: if true; allow write: if isAdmin(); }
+    // Fotos extras de cada montagem (uma foto por registro, carregadas ao abrir o tema)
+    match /galeria/{doc}    { allow read: if true; allow write: if isAdmin(); }
 
     // Configurações: "geral" é pública (textos, WhatsApp, Instagram, vídeos).
     // "privado" tem CPF/CNPJ, Pix, endereço e cláusulas do contrato: só admin lê.
@@ -67,7 +69,7 @@ service cloud.firestore {
 ## O que essas regras fazem
 
 - **admins**: a lista de quem entra no painel. Ter usuário e senha no Authentication **não basta** — o e-mail precisa estar nesta lista. O painel confere isso no login e desconecta quem não está.
-- **temas, categorias, combos, adicionais, configuracoes/geral**: o catálogo lê sem login; só admin altera.
+- **temas, categorias, combos, adicionais, galeria, configuracoes/geral**: o catálogo lê sem login; só admin altera. A **galeria** guarda as fotos extras de cada montagem, uma por registro (um tema no Firebase tem limite de 1 MB).
 - **configuracoes/privado**: CPF/CNPJ, chave Pix, endereço e cláusulas do contrato. Só admin lê — não aparece para quem abre o código do site.
 - **contatos**: cada clique em "Quero esse tema". O site só cria (com os campos e tamanhos certos); só admin vê.
 - **eventos e pecas**: agenda (nomes, telefones, endereços, valores) e controle das peças. Só admin.

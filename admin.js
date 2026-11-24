@@ -9,6 +9,11 @@
   const d = { config: {}, temas: [], categorias: [], combos: [], adicionais: [], contatos: [], eventos: [], pecas: [] };
   let editando = null;      // tema em edição (ou null para novo)
   let fotosEdicao = {};     // { bronze: dataURL|url, ... }
+  // Fotos extras de cada montagem (galeria). Cada foto é um registro separado na coleção "galeria",
+  // porque um tema no Firebase tem limite de 1 MB. { bronze: [{ docId?, src }], ... }
+  let galeriaEdicao = {};
+  let galeriaRemovidas = [];
+  const MAX_EXTRAS = 5;
 
   function toast(msg) {
     const t = $("toast");
@@ -214,9 +219,18 @@
   });
   $("novoTema").addEventListener("click", () => abrirEditor(null));
 
-  function abrirEditor(tema) {
+  async function abrirEditor(tema) {
     editando = tema || null;
     fotosEdicao = { ...((tema && tema.fotos) || {}) };
+    galeriaEdicao = Object.fromEntries(NIVEIS.map((n) => [n, []]));
+    galeriaRemovidas = [];
+    if (tema) {
+      try {
+        const extras = await Dados.listarOnde("galeria", "temaId", tema.docId);
+        extras.sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+          .forEach((x) => { if (galeriaEdicao[x.nivel]) galeriaEdicao[x.nivel].push({ docId: x.docId, src: x.src }); });
+      } catch (e) { console.error(e); }
+    }
     const f = $("formTema");
     f.reset();
     $("editorTitulo").textContent = tema ? `Editar: ${tema.nome}` : "Novo tema";
@@ -226,6 +240,7 @@
     f.destaque.checked = !!(tema && tema.destaque);
     f.novo.checked = !!(tema && tema.novo);
     f.ativo.checked = !tema || tema.ativo !== false;
+    f.fotoInteira.checked = !!(tema && tema.fotoInteira);
     $("checksCat").innerHTML = d.categorias.map((c) => `
       <label><input type="checkbox" value="${c.id}" ${tema && (tema.categorias || []).includes(c.id) ? "checked" : ""}> ${c.emoji} ${escaparHtml(c.nome)}</label>`).join("");
     $("listaSubs").innerHTML = [...new Set(d.temas.map((t) => t.sub).filter(Boolean))].sort().map((s) => `<option value="${escaparHtml(s)}">`).join("");
@@ -251,11 +266,25 @@
           <input type="file" accept="image/*" data-slot="${n}" aria-label="Foto ${NOME_NIVEL[n]}">
         </label>
         ${fotosEdicao[n] ? `<button type="button" class="link perigo" data-tirar="${n}">tirar foto</button>` : ""}
+        <div class="extras">
+          ${(galeriaEdicao[n] || []).map((x, i) => `<span class="extra"><img src="${escaparHtml(x.src)}" alt=""><button type="button" data-tirar-extra="${n}|${i}" aria-label="Tirar foto extra">✕</button></span>`).join("")}
+          ${(galeriaEdicao[n] || []).length < MAX_EXTRAS ? `<label class="extra extra-mais" title="Fotos extras desta montagem">+<input type="file" accept="image/*" multiple data-extra="${n}" aria-label="Fotos extras ${NOME_NIVEL[n]}"></label>` : ""}
+        </div>
+        <small class="extras-info">${(galeriaEdicao[n] || []).length}/${MAX_EXTRAS} extras</small>
       </div>`;
     }).join("");
   }
 
   $("fotosNivel").addEventListener("change", async (e) => {
+    const nx = e.target.dataset.extra;
+    if (nx) {
+      const arquivos = [...(e.target.files || [])].slice(0, MAX_EXTRAS - galeriaEdicao[nx].length);
+      try {
+        for (const a of arquivos) galeriaEdicao[nx].push({ src: await reduzirFoto(a) });
+      } catch (err) { toast("Não consegui abrir uma das fotos."); }
+      desenharSlots();
+      return;
+    }
     const n = e.target.dataset.slot;
     const arquivo = e.target.files && e.target.files[0];
     if (!n || !arquivo) return;
@@ -267,34 +296,21 @@
     }
   });
   $("fotosNivel").addEventListener("click", (e) => {
+    const extra = e.target.dataset.tirarExtra;
+    if (extra) {
+      const [nv, i] = extra.split("|");
+      const [tirada] = galeriaEdicao[nv].splice(Number(i), 1);
+      if (tirada && tirada.docId) galeriaRemovidas.push(tirada.docId);
+      desenharSlots();
+      return;
+    }
     const n = e.target.dataset.tirar;
     if (!n) return;
     delete fotosEdicao[n];
     desenharSlots();
   });
 
-  /** Reduz a foto para no máximo 900px e JPEG leve (cabe bem no banco e carrega rápido). */
-  function reduzirFoto(arquivo) {
-    return new Promise((resolve, reject) => {
-      const leitor = new FileReader();
-      leitor.onerror = reject;
-      leitor.onload = () => {
-        const img = new Image();
-        img.onerror = reject;
-        img.onload = () => {
-          const max = 900;
-          const escala = Math.min(1, max / Math.max(img.width, img.height));
-          const c = document.createElement("canvas");
-          c.width = Math.round(img.width * escala);
-          c.height = Math.round(img.height * escala);
-          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-          resolve(c.toDataURL("image/jpeg", 0.78));
-        };
-        img.src = leitor.result;
-      };
-      leitor.readAsDataURL(arquivo);
-    });
-  }
+  const reduzirFoto = (arquivo) => reduzirImagem(arquivo); // WebP, até 1000px (dados.js)
 
   $("formTema").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -311,6 +327,7 @@
       descricao: f.descricao.value.trim(),
       fotos: { ...fotosEdicao },
       destaque: f.destaque.checked,
+      fotoInteira: f.fotoInteira.checked,
       novo: f.novo.checked,
       ativo: f.ativo.checked,
     };
@@ -318,6 +335,19 @@
     if (editando) await Dados.excluir("temas", id);
     await Dados.salvar("temas", id, dados);
     fecharEditor();
+    // galeria: apaga as fotos tiradas, grava as novas e atualiza a ordem
+    try {
+      for (const docId of galeriaRemovidas) await Dados.excluir("galeria", docId);
+      for (const n of NIVEIS) {
+        for (const [i, x] of (galeriaEdicao[n] || []).entries()) {
+          if (x.docId) await Dados.salvar("galeria", x.docId, { ordem: i });
+          else await Dados.adicionar("galeria", { temaId: id, nivel: n, ordem: i, src: x.src });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast("O tema foi salvo, mas houve erro nas fotos extras. Tente de novo.");
+    }
     await recarregar();
     toast(editando ? "Tema atualizado." : "Tema cadastrado!");
   });
@@ -325,6 +355,9 @@
   $("excluirTema").addEventListener("click", async () => {
     if (!editando || !confirm(`Excluir o tema "${editando.nome}"? As fotos dele também saem.`)) return;
     await Dados.excluir("temas", editando.docId);
+    try {
+      for (const x of await Dados.listarOnde("galeria", "temaId", editando.docId)) await Dados.excluir("galeria", x.docId);
+    } catch (e) { console.error(e); }
     fecharEditor();
     await recarregar();
     toast("Tema excluído.");

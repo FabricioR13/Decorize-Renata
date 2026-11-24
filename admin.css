@@ -379,3 +379,12 @@
 .credito-tf:hover { opacity: 1; text-decoration: underline; }
 
 .ev-dados-apagados { align-self: center; color: var(--suave, #86695a); font-size: 12px; font-weight: 700; }
+
+/* fotos extras (galeria) de cada montagem */
+.extras { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+.extra { position: relative; width: 38px; height: 38px; border-radius: 8px; overflow: hidden; background: var(--papel); }
+.extra img { width: 100%; height: 100%; object-fit: cover; }
+.extra button { position: absolute; top: 1px; right: 1px; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.65); color: #fff; font-size: 9px; line-height: 16px; }
+.extra-mais { display: grid; place-items: center; border: 2px dashed var(--pessego); color: var(--suave); font-weight: 800; cursor: pointer; }
+.extra-mais input { display: none; }
+.extras-info { color: var(--suave); font-size: 11px; font-weight: 700; }

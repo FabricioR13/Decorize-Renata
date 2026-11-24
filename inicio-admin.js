@@ -5,27 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const P = () => window.Painel;
 
-  /** Reduz a foto de capa (no máximo 900px, JPEG leve). */
-  function reduzirFoto(arquivo) {
-    return new Promise((resolve, reject) => {
-      const leitor = new FileReader();
-      leitor.onerror = reject;
-      leitor.onload = () => {
-        const img = new Image();
-        img.onerror = reject;
-        img.onload = () => {
-          const escala = Math.min(1, 900 / Math.max(img.width, img.height));
-          const c = document.createElement("canvas");
-          c.width = Math.round(img.width * escala);
-          c.height = Math.round(img.height * escala);
-          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-          resolve(c.toDataURL("image/jpeg", 0.78));
-        };
-        img.src = leitor.result;
-      };
-      leitor.readAsDataURL(arquivo);
-    });
-  }
+  const reduzirFoto = (arquivo) => reduzirImagem(arquivo); // WebP, até 1000px (dados.js)
 
   /* ---------- categorias ---------- */
   function desenharCats() {
