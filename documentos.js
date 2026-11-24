@@ -74,6 +74,10 @@
   .caixa{padding:12px 14px;border:1.5px solid #f1dfcf;border-radius:12px;background:#fffaf5}
   .valor{font:800 26px Poppins,sans-serif;color:#3b2314}
   table{width:100%;border-collapse:collapse;font-size:14px} td{padding:6px 4px;border-bottom:1px dashed #f1dfcf} td:last-child{text-align:right;font-weight:800}
+  table.pecas th{font:800 11px Nunito,sans-serif;color:#86695a;text-align:left;padding:4px;border-bottom:1.5px solid #f1dfcf;text-transform:uppercase}
+  table.pecas td{text-align:left;font-weight:600;vertical-align:middle} table.pecas td:last-child{text-align:center}
+  table.pecas img{width:42px;height:42px;object-fit:cover;border-radius:8px;display:block} table.pecas small{color:#86695a}
+  table.pecas .conf{text-align:center;font-size:18px;width:64px}
   .ass{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:46px} .ass div{padding-top:8px;border-top:1.5px solid #3b2314;text-align:center;font-size:13px;font-weight:700}
   .ass.uma{grid-template-columns:minmax(0,320px);justify-content:center}
   .rodape{margin-top:26px;font-size:11px;color:#a08676;text-align:center}
@@ -140,6 +144,27 @@
   }
 
   /* ---------- contrato ---------- */
+  /** Peças do evento com foto, quantidade, valor de reposição e conferência na retirada e na devolução. */
+  function tabelaPecas(e) {
+    if (!window.Pecas) return "";
+    const itens = window.Pecas.pecasDoEvento(e).map((x) => {
+      const p = window.Pecas.lista().find((y) => (y.id || y.docId) === x.id);
+      return p ? { p, qtd: x.qtd } : null;
+    }).filter(Boolean);
+    if (!itens.length) return "";
+    const tema = (id) => P().d.temas.find((t) => (t.id || t.docId) === id);
+    const total = itens.reduce((s, i) => s + (Number(i.p.valorReposicao) || 0) * i.qtd, 0);
+    return `<h3>Peças entregues</h3>
+      <table class="pecas">
+        <tr><th></th><th>Peça</th><th>Qtd</th><th>Reposição (un.)</th><th>Retirada</th><th>Devolução</th></tr>
+        ${itens.map(({ p, qtd }) => {
+          const foto = p.foto || (tema(p.temaId) ? fotoCapa(tema(p.temaId)) : "");
+          return `<tr><td>${foto ? `<img src="${esc(foto)}" alt="">` : ""}</td><td>${esc(p.nome)}${p.descricao ? `<br><small>${esc(p.descricao)}</small>` : ""}</td><td>${qtd}</td><td>${Number(p.valorReposicao) > 0 ? formatarMoeda(p.valorReposicao) : "—"}</td><td class="conf">☐</td><td class="conf">☐</td></tr>`;
+        }).join("")}
+      </table>
+      ${total ? `<p><small>Valor total de reposição das peças: <b>${formatarMoeda(total)}</b>. Peças danificadas, manchadas ou perdidas são cobradas por esses valores.</small></p>` : ""}`;
+  }
+
   function contrato(e) {
     const c = P().d.config;
     const kit = kitDe(e.kitId);
@@ -156,6 +181,7 @@
         <p><b>Tema:</b> ${esc(e.temaNome)}<br><b>${esc(kit.nome)}:</b> ${esc(kit.itens || "")}${ads.length ? `<br><b>Adicionais:</b> ${esc(ads.join(", "))}` : ""}<br>
         <b>Modalidade:</b> ${pegue ? "Pegue e monte (a locatária retira, monta e devolve)" : "Montagem e desmontagem feitas pela locadora"}</p>
       </div>
+      ${tabelaPecas(e)}
       <h3>Datas e local</h3>
       <table>
         <tr><td>Evento</td><td>${dataBR(e.data)}${e.horaFesta ? ` às ${hora(e.horaFesta)}` : ""}</td></tr>

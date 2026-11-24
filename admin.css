@@ -388,3 +388,31 @@
 .extra-mais { display: grid; place-items: center; border: 2px dashed var(--pessego); color: var(--suave); font-weight: 800; cursor: pointer; }
 .extra-mais input { display: none; }
 .extras-info { color: var(--suave); font-size: 11px; font-weight: 700; }
+
+/* ---------- acervo (etapa 2) ---------- */
+.pc-topo-editor { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; }
+.pc-topo-campos { display: grid; gap: 6px; justify-items: start; }
+.pc-topo-campos .campo { width: 100%; }
+.pc-foto { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 16px; overflow: hidden; cursor: pointer; border: 2px dashed var(--pessego); background: var(--papel); text-align: center; font-size: 28px; line-height: 1.1; }
+.pc-foto img { width: 100%; height: 100%; object-fit: cover; }
+.pc-foto small { display: block; font-size: 11px; font-weight: 800; color: var(--suave); }
+.pc-desc { color: var(--suave); font-size: 13px; }
+.pc-previa { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.pc-previa th, .pc-previa td { padding: 6px 8px; border-bottom: 1px dashed var(--linha); text-align: left; }
+.pc-previa th { font-size: 11px; text-transform: uppercase; color: var(--suave); }
+
+/* peças do evento na agenda */
+.ag-pecas { display: grid; gap: 6px; margin-top: 8px; }
+.ag-peca { display: grid; grid-template-columns: 1fr 70px; gap: 4px 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: #fff; border: 1.5px solid var(--linha); }
+.ag-peca.desmarcada { opacity: 0.55; }
+.ag-peca.falta { border-color: #e0463c; background: #fff3f2; }
+.ag-peca-check { display: flex; align-items: center; gap: 10px; cursor: pointer; min-width: 0; }
+.ag-peca-check input { width: 20px; height: 20px; accent-color: var(--laranja); flex: none; }
+.ag-peca-check img, .ag-peca-check .sem { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex: none; display: grid; place-items: center; background: var(--papel); }
+.ag-peca-check b { display: block; font-size: 14px; color: var(--tinta); }
+.ag-peca-check small { color: var(--suave); font-size: 12px; font-weight: 700; }
+.ag-peca-qtd { width: 70px; text-align: center; padding: 8px 6px; }
+.ag-peca-status { grid-column: 1 / -1; font-size: 12px; font-weight: 800; color: #1a8a47; }
+.ag-peca-status:empty { display: none; }
+.ag-peca.falta .ag-peca-status { color: #c0392b; }
+.ev-alerta.ev-falta { background: #fff3f2; border-color: #f3b3ad; color: #a5281e; }

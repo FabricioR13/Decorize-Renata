@@ -211,7 +211,8 @@ function gerarEventosDemo() {
 // Peças de exemplo (controle de estoque e manutenção)
 function gerarPecasDemo() {
     const agora = new Date().toISOString();
-    const pc = (id, nome, temaId, quantidade, situacao, obs = "") => ({ id, nome, temaId, quantidade, situacao, obs, atualizadoEm: agora });
+    const REPOSICAO = { pc1: 120, pc2: 150, pc3: 50, pc4: 90, pc5: 80, pc6: 60, pc7: 250, pc8: 70, pc9: 45 };
+    const pc = (id, nome, temaId, quantidade, situacao, obs = "") => ({ id, nome, temaId, quantidade, situacao, obs, atualizadoEm: agora, valorReposicao: REPOSICAO[id] || 0, kits: NIVEIS, descricao: "", foto: "", porFesta: temaId ? quantidade : 1 });
     return [
         pc("pc1", "Capa do painel redondo", "homem-aranha", 1, "ok"),
         pc("pc2", "Capas dos 3 cilindros", "homem-aranha", 3, "ok"),

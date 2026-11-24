@@ -189,9 +189,10 @@
         <input class="entrada" id="pcBusca" type="search" placeholder="Procurar peça…">
         <select class="entrada" id="pcTema"></select>
         <button class="btn btn-claro" id="pcTodas">Ver todas</button>
+        <button class="btn btn-claro" id="pcImportar">📥 Importar planilha</button>
         <button class="btn btn-laranja" id="pcNova">+ Nova peça</button>
       </div>
-      <p class="dica">Cadastre capas, painéis, pelúcias e acessórios. Quando uma peça vai para o conserto, sai danificada ou some, mude a situação aqui: a agenda avisa nos eventos com aquele tema.</p>
+      <p class="dica">Este é o seu acervo: cada peça com foto, quantidade e valor de reposição. As peças do tema já vêm marcadas quando você marca um evento na agenda, e o sistema avisa em vermelho se faltar peça naquela data. Quando uma peça vai para o conserto, sai danificada ou some, mude a situação aqui.</p>
       <div id="pcLista" class="pc-lista"></div>
     </section>
 
@@ -349,6 +350,11 @@
         <label class="campo"><span>Endereço</span><input name="endereco" placeholder="Rua, número — cidade"></label>
       </div>
       <fieldset class="campo"><legend>Adicionais</legend><div class="checks" id="agAdicionais"></div></fieldset>
+      <fieldset class="campo">
+        <legend>Peças desta festa</legend>
+        <small>Já vêm marcadas as peças do tema que entram neste kit. Desmarque o que não vai, ajuste a quantidade ou acrescente peças gerais.</small>
+        <div class="ag-pecas" id="agPecasLista"></div>
+      </fieldset>
       <div class="grade-form">
         <label class="campo"><span>Valor total (R$)</span><input name="valor" inputmode="decimal"><small><span id="agSugestao"></span> <button type="button" class="link" id="agUsarTabela">usar valor da tabela</button></small></label>
         <label class="campo"><span>Sinal recebido (R$)</span><input name="sinal" inputmode="decimal" placeholder="0"></label>
@@ -361,7 +367,7 @@
           </select>
         </label>
       </div>
-      <label class="campo"><span>Observações</span><textarea name="obs" rows="2" placeholder="Nome e idade do aniversariante, cores, recados…"></textarea></label>
+      <label class="campo"><span>Observações</span><textarea name="obs" rows="2" placeholder="Nome e idade do aniversariante, cor dos balões, detalhes da montagem, recados…"></textarea></label>
     </div>
     <div class="editor-pe">
       <button type="button" class="link perigo" id="agExcluir">Excluir evento</button>
@@ -392,6 +398,26 @@
 </div>
 
 <!-- Peça -->
+<!-- Importar o acervo de uma planilha -->
+<div class="fundo" id="pcImport" hidden>
+  <div class="editor">
+    <div class="editor-topo">
+      <h2>Importar peças da planilha</h2>
+      <button type="button" class="fechar" id="pcImportFechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="editor-corpo">
+      <p class="dica">No Excel, selecione as linhas do acervo <b>com a linha dos títulos</b>, copie (Ctrl+C) e cole aqui. Também dá para escolher um arquivo .csv. As colunas são reconhecidas pelo título: <b>Peça</b> (ou Nome/Item), <b>Quantidade</b>, <b>Valor de reposição</b> (ou Valor), <b>Tema</b> e <b>Descrição</b>.</p>
+      <textarea class="entrada" id="pcImportTexto" rows="8" placeholder="Peça	Quantidade	Valor de reposição	Tema&#10;Capa preta painel redondo	3	120	&#10;Ursinho grande	1	90	Chá Ursinho Azul e Bege"></textarea>
+      <label class="btn btn-claro" style="justify-self:start">Escolher arquivo .csv<input type="file" accept=".csv,text/csv,text/plain" id="pcImportArquivo" hidden></label>
+      <div id="pcImportPrevia"></div>
+    </div>
+    <div class="editor-pe">
+      <span></span>
+      <button type="button" class="btn btn-laranja" id="pcImportOk" disabled>Importar</button>
+    </div>
+  </div>
+</div>
+
 <div class="fundo" id="pcEditor" hidden>
   <form class="editor" id="pcForm">
     <div class="editor-topo">
@@ -399,11 +425,27 @@
       <button type="button" class="fechar" id="pcFechar" aria-label="Fechar">✕</button>
     </div>
     <div class="editor-corpo">
-      <label class="campo"><span>Peça</span><input name="nome" placeholder="Ex.: Capa do painel redondo, ursinho grande, bandeja espelhada"></label>
+      <div class="pc-topo-editor">
+        <label class="pc-foto" title="Foto da peça (sua ou print do fornecedor)">
+          <span id="pcFotoPrevia">📷<small>foto</small></span>
+          <input type="file" accept="image/*" id="pcFotoArquivo" hidden>
+        </label>
+        <div class="pc-topo-campos">
+          <label class="campo"><span>Peça</span><input name="nome" placeholder="Ex.: Capa preta do painel redondo, ursinho grande"></label>
+          <button type="button" class="link perigo" id="pcTirarFoto" hidden>tirar foto</button>
+        </div>
+      </div>
+      <label class="campo"><span>Descrição (opcional)</span><input name="descricao" placeholder="Tamanho, cor, material… Ex.: 1,50 m, tecido sublimado"></label>
       <div class="grade-form">
         <label class="campo"><span>De qual tema</span><select name="temaId"></select></label>
-        <label class="campo"><span>Quantidade</span><input name="quantidade" type="number" min="1" value="1"></label>
+        <label class="campo"><span>Quantidade no acervo</span><input name="quantidade" type="number" min="1" value="1"></label>
+        <label class="campo"><span>Usa por festa</span><input name="porFesta" type="number" min="1" value="1"></label>
+        <label class="campo"><span>Valor de reposição (R$)</span><input name="valorReposicao" inputmode="decimal" placeholder="Quanto custa repor se quebrar"></label>
       </div>
+      <fieldset class="campo">
+        <legend>Entra em quais kits (para já vir marcada na agenda)</legend>
+        <div class="checks" id="pcKits"></div>
+      </fieldset>
       <label class="campo"><span>Situação</span>
         <select name="situacao">
           <option value="ok">✅ Em uso</option>

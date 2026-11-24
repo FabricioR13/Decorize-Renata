@@ -17,7 +17,7 @@
   const SEMANA_LONGA = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
   const hoje = () => diaISO(new Date());
-  const ag = { mes: hoje().slice(0, 7), dia: hoje(), visao: "mes", editando: null, valorManual: false };
+  const ag = { mes: hoje().slice(0, 7), dia: hoje(), visao: "mes", editando: null, valorManual: false, pecas: new Map(), pecasManual: false, verGerais: false };
 
   const partes = (iso) => String(iso).split("-").map(Number);
   const diaSemana = (iso) => { const [a, m, d] = partes(iso); return new Date(a, m - 1, d).getDay(); };
@@ -102,9 +102,10 @@
 
   /* ---------- peças fora de uso ---------- */
   function avisoPecas(e) {
-    const fora = window.Pecas ? window.Pecas.foraDeUso(e.temaId) : [];
-    if (!fora.length || e.status === "realizado" || e.status === "cancelado") return "";
-    return `<p class="ev-alerta ev-pecas">🧰 Peças deste tema fora de uso: ${fora.map((x) => `${escaparHtml(x.nome)} (${escaparHtml(window.Pecas.situacoes[x.situacao].nome.toLowerCase())})`).join(", ")}</p>`;
+    if (!window.Pecas || e.status === "realizado" || e.status === "cancelado") return "";
+    const faltam = window.Pecas.faltas(e);
+    if (!faltam.length) return "";
+    return `<p class="ev-alerta ev-falta">🧰 Falta peça nesta data: ${faltam.map((d) => `<b>${escaparHtml(d.peca.nome)}</b> (${escaparHtml(window.Pecas.textoFalta(d))})`).join("; ")}</p>`;
   }
 
   /* ---------- lembretes de hoje e amanhã ---------- */
@@ -266,6 +267,10 @@
   function abrirEditor(e, padrao = {}) {
     ag.editando = e || null;
     ag.valorManual = !!e;
+    // peças: evento salvo com a lista usa a lista dele; novo (ou antigo, sem lista) segue o tema e o kit
+    ag.pecasManual = !!(e && Array.isArray(e.pecas));
+    ag.pecas = new Map(ag.pecasManual ? e.pecas.map((x) => [x.id, x.qtd]) : []);
+    ag.verGerais = false;
     const v = { modalidade: "pegue", status: "orcamento", data: ag.dia >= hoje() ? ag.dia : hoje(), horaMontagem: "14:00", horaDevolucao: "12:00", adicionais: [], ...padrao, ...(e || {}) };
     const f = $("agForm");
     f.reset();
@@ -309,6 +314,7 @@
       adicionais: [...$("agAdicionais").querySelectorAll("input:checked")].map((i) => i.value),
       valor: P().numero(f.valor.value), sinal: P().numero(f.sinal.value),
       status: f.status.value, obs: f.obs.value.trim(),
+      pecas: [...ag.pecas.entries()].map(([id, qtd]) => ({ id, qtd })),
     };
   }
 
@@ -332,6 +338,11 @@
     const sug = valorSugerido(ev);
     if (!ag.valorManual && sug) f.valor.value = P().valorCampo(sug);
     $("agSugestao").textContent = sug ? `Pela tabela: ${formatarMoeda(sug)}` : "";
+    if (!ag.pecasManual && window.Pecas) {
+      ag.pecas = new Map(window.Pecas.padraoDoEvento(ev.temaId, ev.kitId).map((x) => [x.id, x.qtd]));
+      ev.pecas = [...ag.pecas.entries()].map(([id, qtd]) => ({ id, qtd }));
+    }
+    desenharPecasEditor(ev);
     $("agPecas").innerHTML = avisoPecas({ ...ev, status: ev.status === "realizado" ? "orcamento" : ev.status });
     $("agPecas").hidden = !$("agPecas").innerHTML;
     const conf = conflitos({ ...ev, valor: 0 });
@@ -339,6 +350,66 @@
     $("agConflito").innerHTML = conf.length
       ? `⚠️ <b>${escaparHtml(ev.temaNome)}</b> já está marcado para ${conf.map((o) => `${escaparHtml(o.cliente)} (${dataCurta(o.data)}${fim(o) !== o.data ? ` a ${dataCurta(fim(o))}` : ""})`).join(", ")}. Confira se dá tempo de voltar as peças.`
       : "";
+  }
+
+  /* ---------- peças do evento (pré-marcadas pelo tema e kit) ---------- */
+  function desenharPecasEditor(ev) {
+    const caixa = $("agPecasLista");
+    if (!window.Pecas || !caixa) return;
+    const todas = window.Pecas.lista();
+    const doTema = todas.filter((x) => ev.temaId && x.temaId === ev.temaId);
+    const gerais = todas.filter((x) => !x.temaId);
+    const escolhidasFora = todas.filter((x) => ag.pecas.has(x.id || x.docId) && !doTema.includes(x) && !gerais.includes(x));
+    const mostrar = [...doTema, ...escolhidasFora, ...gerais.filter((x) => ag.verGerais || ag.pecas.has(x.id || x.docId))];
+    const disp = new Map(window.Pecas.disponibilidade(ev, [...ag.pecas.entries()].map(([id, qtd]) => ({ id, qtd })))
+      .map((d) => [d.peca.id || d.peca.docId, d]));
+    const linha = (x) => {
+      const id = x.id || x.docId;
+      const marcada = ag.pecas.has(id);
+      const d = disp.get(id);
+      const tema = P().d.temas.find((t) => (t.id || t.docId) === x.temaId);
+      const foto = x.foto || (tema ? fotoCapa(tema) : "");
+      return `<div class="ag-peca${marcada ? "" : " desmarcada"}${d && d.falta ? " falta" : ""}" data-peca="${escaparHtml(id)}">
+        <label class="ag-peca-check"><input type="checkbox" data-peca-marcar ${marcada ? "checked" : ""}>
+          ${foto ? `<img src="${escaparHtml(foto)}" alt="">` : `<span class="sem">🧰</span>`}
+          <span><b>${escaparHtml(x.nome)}</b><small>${Number(x.valorReposicao) > 0 ? `reposição ${formatarMoeda(x.valorReposicao)}` : "sem valor de reposição"}</small></span>
+        </label>
+        <input class="entrada ag-peca-qtd" type="number" min="1" data-peca-qtd value="${marcada ? ag.pecas.get(id) : Math.max(1, Number(x.porFesta) || 1)}" ${marcada ? "" : "disabled"} aria-label="Quantidade">
+        <span class="ag-peca-status" data-peca-status>${marcada && d ? (d.falta ? `⚠️ ${escaparHtml(window.Pecas.textoFalta(d))}` : `✓ ${d.total - d.reservado} livre${d.total - d.reservado === 1 ? "" : "s"}`) : ""}</span>
+      </div>`;
+    };
+    caixa.innerHTML = (mostrar.length ? mostrar.map(linha).join("") : `<p class="vazio-adm">${ev.temaId ? "Nenhuma peça cadastrada para este tema ainda (aba 🧰 Peças)." : "Escolha o tema para ver as peças."}</p>`)
+      + (gerais.length ? `<button type="button" class="link" data-ver-gerais>${ag.verGerais ? "Esconder peças gerais" : `+ Peças gerais (${gerais.length})`}</button>` : "");
+  }
+
+  function ligarPecasEditor() {
+    const caixa = $("agPecasLista");
+    if (!caixa) return;
+    const mudou = () => { ag.pecasManual = true; desenharPecasEditor(lerForm()); };
+    // os eventos das peças não sobem para o formulário (senão a lista seria redesenhada enquanto digita)
+    caixa.addEventListener("input", (e) => {
+      e.stopPropagation();
+      const l = e.target.closest("[data-peca]");
+      if (!l || !e.target.matches("[data-peca-qtd]")) return;
+      const q = Math.max(1, Math.round(Number(e.target.value) || 1));
+      ag.pecas.set(l.dataset.peca, q);
+      ag.pecasManual = true;
+      clearTimeout(ligarPecasEditor._t);
+      ligarPecasEditor._t = setTimeout(() => { const foco = l.dataset.peca; desenharPecasEditor(lerForm()); const el = caixa.querySelector(`[data-peca="${foco}"] [data-peca-qtd]`); if (el) { el.focus(); const v = el.value; el.value = ""; el.value = v; } }, 500);
+    });
+    caixa.addEventListener("change", (e) => {
+      e.stopPropagation();
+      const l = e.target.closest("[data-peca]");
+      if (!l || !e.target.matches("[data-peca-marcar]")) return;
+      if (e.target.checked) ag.pecas.set(l.dataset.peca, Math.max(1, Number(l.querySelector("[data-peca-qtd]").value) || 1));
+      else ag.pecas.delete(l.dataset.peca);
+      mudou();
+    });
+    caixa.addEventListener("click", (e) => {
+      if (!e.target.matches("[data-ver-gerais]")) return;
+      ag.verGerais = !ag.verGerais;
+      desenharPecasEditor(lerForm());
+    });
   }
 
   /* ---------- WhatsApp e CPF da cliente ---------- */
@@ -491,6 +562,7 @@
       if (e.target.name === "telefone") e.target.value = mascaraTelefone(e.target.value);
       if (e.target.name === "cpf") e.target.value = mascaraCpf(e.target.value);
       if (e.target.name === "valor") ag.valorManual = true;
+      if (e.target.name === "temaId" || e.target.name === "kitId") ag.pecasManual = false; // outro tema/kit: volta a marcar pelas peças dele
       if (e.target.name === "data") {
         const f = $("agForm");
         if (!f.devolucao.value || f.devolucao.value < f.data.value) f.devolucao.value = somarDias(f.data.value, f.modalidade.value === "pegue" ? 1 : 0);
@@ -499,6 +571,7 @@
     });
     $("agForm").addEventListener("change", atualizarEditor);
     $("agUsarTabela").addEventListener("click", () => { ag.valorManual = false; atualizarEditor(); });
+    ligarPecasEditor();
     $("agExcluir").addEventListener("click", async () => {
       if (!ag.editando || !confirm("Excluir este evento da agenda?")) return;
       await Dados.excluir("eventos", ag.editando.docId || ag.editando.id);
